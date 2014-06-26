@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #include "nan.h"
 #include "v8-debug.h"
 
@@ -26,7 +27,7 @@ namespace nodex {
         const char* msg = NanCString(args[0], &length);
         uint16_t* command = (uint16_t*)malloc(sizeof(uint16_t) * (length + 1));
         command[length] = 0;
-        for (int i = 0; i < strlen(msg); i++) {
+        for (int i = 0; i < length; i++) {
           command[i] = msg[i];
         }
         v8::Debug::SendCommand(command, length);
