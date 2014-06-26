@@ -28,11 +28,12 @@ module.exports.register = function(name, func) {
   });
 };
 
-module.exports.signal = function(name, data) {
+module.exports.command = function(name, attributes, userdata) {
   var message = {
     seq: 1,
     type: 'request',
-    command: name
+    command: name,
+    arguments: attributes || {}
   };
-  binding.signal(JSON.stringify(message), data);
+  binding.signal(JSON.stringify(message));
 };
