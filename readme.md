@@ -1,7 +1,7 @@
 [![Build Status](https://secure.travis-ci.org/node-inspector/v8-debug.png?branch=master)](http://travis-ci.org/node-inspector/v8-debug)
 
 # v8-debug 
-Provides extending API for [node](http://github.com/ry/node) internal debugger protocol (based ob [v8 debugger protocol](https://code.google.com/p/v8/wiki/DebuggerProtocol))
+Provides extending API for [node](http://github.com/ry/node) internal debugger protocol (based on [v8 debugger protocol](https://code.google.com/p/v8/wiki/DebuggerProtocol))
 
 This is a part of [node-inspector](http://github.com/node-inspector/node-inspector).
 
