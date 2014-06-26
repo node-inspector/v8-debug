@@ -1,4 +1,4 @@
-var binding = require('./build/Release/debugger.node');
+var binding = require('./build/Release/debug.node');
 var EventEmitter = require('events').EventEmitter;
 
 binding.call(function WRAP_debugCommandProcessor(exec_state) {
