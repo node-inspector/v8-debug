@@ -20,6 +20,9 @@ This is a part of [node-inspector](http://github.com/node-inspector/node-inspect
 ||name|**{String}**| *Name of command.*|
 ||attributes|**{Object}**| *Extra parameters, that passes as command arguments.*|
 ||userdata|**{Object}**| *Data than needs to be stored, but can't be serialised before call processor callback.* (Not implemented now)|
+|commandToEvent|||*Convert command response object to default event object with same name*|
+||request|**{Object}**|*Request object created by debugger*|
+||response|**{Object}**|*Response object that needs to be converted*|
 
 ## Usage
 
@@ -28,13 +31,7 @@ var debug = require('v8-debug');
 
 //register 'console' event in v8 debugger protocol
 debug.register('console', function(request, response) {
-  response.type = 'event';      //redefine command as event
-  response.event = 'console';   //event name
-  delete response.request_seq;  //for event this property is not useful
-  delete response.command;      //for event this property is not useful
-  response.body = {
-    message: request.arguments.message
-  };
+  debug.commandToEvent(request, response);
 });
 //Now debugger can emit new event 'console'
 
@@ -46,3 +43,4 @@ console.log = (function(fn) {
   }
 } (console.log));
 ```
+For more experience see [protocol documentation](https://github.com/buggerjs/bugger-v8-client/blob/jk/document-commands/PROTOCOL.md)

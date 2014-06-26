@@ -37,3 +37,11 @@ module.exports.command = function(name, attributes, userdata) {
   };
   binding.signal(JSON.stringify(message));
 };
+
+module.exports.commandToEvent = function(request, response) {
+  response.type = 'event';
+  response.event = response.command;
+  response.body = request.arguments || {};
+  delete response.command;
+  delete response.request_seq;
+};
