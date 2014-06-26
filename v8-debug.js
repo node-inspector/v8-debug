@@ -1,11 +1,23 @@
 var binding = require('./build/Release/debugger.node');
+var EventEmitter = require('events').EventEmitter;
 
 binding.call(function WRAP_debugCommandProcessor(exec_state) {
-  var processor = exec_state.debugCommandProcessor(true);
+  var processor = exec_state.debugCommandProcessor(true).__proto__;
+  var oldProcessDebugRequest = processor.processDebugRequest;
   
-  processor.__proto__.extendedProcessDebugJSONRequestHandles_ = {};
+  processor.extendedProcessDebugJSONRequestHandles_ = {
+    'disconnect': function(request, response) {
+      processor.processDebugRequest = oldProcessDebugRequest;
+      delete processor.extendedProcessDebugJSONRequest_;
+      delete processor.extendedProcessDebugJSONRequestHandles_;
+      
+      processor.disconnectRequest_(request, response);
+      
+      module.exports.emit('close');
+    }
+  };
 
-  processor.__proto__.extendedProcessDebugJSONRequest_ = function(json_request) {
+  processor.extendedProcessDebugJSONRequest_ = function(json_request) {
     var request = JSON.parse(json_request);
     if (typeof this.extendedProcessDebugJSONRequestHandles_[request.command] == 'function') {
       var response = this.createResponse(request)
@@ -14,7 +26,7 @@ binding.call(function WRAP_debugCommandProcessor(exec_state) {
     }
   };
   
-  processor.__proto__.processDebugRequest = function WRAPPED_BY_NODE_INSPECTOR(request) {
+  processor.processDebugRequest = function WRAPPED_BY_NODE_INSPECTOR(request) {
     return this.extendedProcessDebugJSONRequest_(request)
       || this.processDebugJSONRequest(request);
   };
@@ -45,3 +57,5 @@ module.exports.commandToEvent = function(request, response) {
   delete response.command;
   delete response.request_seq;
 };
+
+module.exports.__proto__ = EventEmitter.prototype;
