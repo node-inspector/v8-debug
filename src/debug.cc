@@ -35,6 +35,16 @@ namespace nodex {
         NanReturnUndefined();
       };
       
+      static NAN_METHOD(Mirror) {
+        NanScope();
+        
+        if (args.Length() < 1) {
+          return NanThrowError("Invalid number of arguments");
+        }
+        
+        NanReturnValue(v8::Debug::GetMirror(args[0]));
+      }
+      
     private:
       Debug() {}
       ~Debug() {}
@@ -44,6 +54,7 @@ namespace nodex {
     NanScope();
     NODE_SET_METHOD(target, "call", Debug::Call);
     NODE_SET_METHOD(target, "signal", Debug::Signal);
+    NODE_SET_METHOD(target, "mirror", Debug::Mirror);
   }
   
   NODE_MODULE(debug, Initialize)

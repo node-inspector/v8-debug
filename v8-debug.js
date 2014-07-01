@@ -96,6 +96,8 @@ module.exports.command = function(name, attributes, userdata) {
   binding.signal(JSON.stringify(message));
 };
 
+module.exports.mirror = binding.mirror;
+
 module.exports.commandToEvent = function(request, response) {
   response.type = 'event';
   response.event = response.command;
