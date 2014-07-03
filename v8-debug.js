@@ -1,8 +1,10 @@
 var binding = require('./build/Release/debug.node');
 var EventEmitter = require('events').EventEmitter;
 
+var processor;
 binding.call(function WRAP_debugCommandProcessor(exec_state) {
-  var processor = exec_state.debugCommandProcessor(true).__proto__;
+  processor = exec_state.debugCommandProcessor(true).__proto__;
+
   var oldProcessDebugRequest = processor.processDebugRequest;
 
   processor.extendedProcessDebugJSONRequestHandles_ = {
@@ -79,11 +81,7 @@ binding.call(function WRAP_debugCommandProcessor(exec_state) {
 });
 
 module.exports.register = function(name, func) {
-  var processor;
-  binding.call(function(exec_state) {
-    processor = exec_state.debugCommandProcessor(true);
-    processor.__proto__.extendedProcessDebugJSONRequestHandles_[name] = func;
-  });
+  processor.extendedProcessDebugJSONRequestHandles_[name] = func;
 };
 
 module.exports.command = function(name, attributes, userdata) {
