@@ -1,28 +1,32 @@
 var binding = require('./build/Release/debug.node');
 var EventEmitter = require('events').EventEmitter;
+var inherits = require('util').inherits;
 
-var processor;
-binding.call(function WRAP_debugCommandProcessor(exec_state) {
-  processor = exec_state.debugCommandProcessor(true).__proto__;
+inherits(V8Debug, EventEmitter);
+function V8Debug() {
+  this._processor = this.runInDebugContext('DebugCommandProcessor').prototype;
 
-  var oldProcessDebugRequest = processor.processDebugRequest;
+  this._oldProcessDebugRequest = this._processor.processDebugRequest;
 
-  processor.extendedProcessDebugJSONRequestHandles_ = {
+  this._processor.extendedProcessDebugJSONRequestHandles_ = {
     'disconnect': function(request, response) {
       var Module = require('module').Module;
       var moduleKey = module.id.replace(/\\\\|\/\//g, '$1');
 
-      processor.processDebugRequest = oldProcessDebugRequest;
-      delete processor.extendedProcessDebugJSONRequest_;
-      delete processor.extendedProcessDebugJSONRequestHandles_;
+      this._processor.processDebugRequest = this._oldProcessDebugRequest;
+      delete this._oldProcessDebugRequest;
+      delete this._processor.extendedProcessDebugJSONRequest_;
+      delete this._processor.extendedProcessDebugJSONRequestHandles_;
       delete Module._cache[moduleKey];
 
-      processor.disconnectRequest_(request, response);
-      module.exports.emit('close');
-    }
+      this._processor.disconnectRequest_(request, response);
+      delete this._processor;
+
+      this.emit('close');
+    }.bind(this)
   };
 
-  processor.extendedProcessDebugJSONRequest_ = function(json_request) {
+  this._processor.extendedProcessDebugJSONRequest_ = function(json_request) {
     var request;  // Current request.
     var response;  // Generated response.
     try {
@@ -74,17 +78,17 @@ binding.call(function WRAP_debugCommandProcessor(exec_state) {
     }
   };
 
-  processor.processDebugRequest = function WRAPPED_BY_NODE_INSPECTOR(request) {
+  this._processor.processDebugRequest = function WRAPPED_BY_NODE_INSPECTOR(request) {
     return this.extendedProcessDebugJSONRequest_(request)
       || this.processDebugJSONRequest(request);
   };
-});
+}
 
-module.exports.register = function(name, func) {
-  processor.extendedProcessDebugJSONRequestHandles_[name] = func;
+V8Debug.prototype.register = function(name, func) {
+  this._processor.extendedProcessDebugJSONRequestHandles_[name] = func;
 };
 
-module.exports.command = function(name, attributes, userdata) {
+V8Debug.prototype.command = function(name, attributes, userdata) {
   var message = {
     seq: 1,
     type: 'request',
@@ -94,9 +98,9 @@ module.exports.command = function(name, attributes, userdata) {
   binding.signal(JSON.stringify(message));
 };
 
-module.exports.mirror = binding.mirror;
+V8Debug.prototype.mirror = binding.mirror;
 
-module.exports.commandToEvent = function(request, response) {
+V8Debug.prototype.commandToEvent = function(request, response) {
   response.type = 'event';
   response.event = response.command;
   response.body = request.arguments || {};
@@ -104,7 +108,7 @@ module.exports.commandToEvent = function(request, response) {
   delete response.request_seq;
 };
 
-module.exports.runInDebugContext = function(script) {
+V8Debug.prototype.runInDebugContext = function(script) {
   if (typeof script == 'function') script = script.toString() + '()';
   
   script = /\);$/.test(script) ? script : '(' + script + ');';
@@ -112,4 +116,4 @@ module.exports.runInDebugContext = function(script) {
   return binding.runScript(script);
 };
 
-module.exports.__proto__ = EventEmitter.prototype;
+module.exports = new V8Debug();
