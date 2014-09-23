@@ -47,8 +47,21 @@ namespace nodex {
         }
         
         NanReturnValue(v8::Debug::GetMirror(args[0]));
-      }
+      };
       
+      static NAN_METHOD(RunScript) {
+        NanScope();
+
+        v8::Local<v8::String> script_source(args[0]->ToString());
+        if (script_source.IsEmpty())
+          NanReturnUndefined();
+        v8::Context::Scope context_scope(v8::Debug::GetDebugContext());
+        v8::Local<v8::Script> script = v8::Script::Compile(script_source);
+        if (script.IsEmpty())
+          NanReturnUndefined();
+
+        NanReturnValue(script->Run());
+      };
     private:
       Debug() {}
       ~Debug() {}
@@ -59,6 +72,7 @@ namespace nodex {
     NODE_SET_METHOD(target, "call", Debug::Call);
     NODE_SET_METHOD(target, "signal", Debug::Signal);
     NODE_SET_METHOD(target, "mirror", Debug::Mirror);
+    NODE_SET_METHOD(target, "runScript", Debug::RunScript);
   }
   
   NODE_MODULE(debug, Initialize)

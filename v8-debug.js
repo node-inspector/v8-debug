@@ -104,4 +104,12 @@ module.exports.commandToEvent = function(request, response) {
   delete response.request_seq;
 };
 
+module.exports.runInDebugContext = function(script) {
+  if (typeof script == 'function') script = script.toString() + '()';
+  
+  script = /\);$/.test(script) ? script : '(' + script + ');';
+  
+  return binding.runScript(script);
+};
+
 module.exports.__proto__ = EventEmitter.prototype;
