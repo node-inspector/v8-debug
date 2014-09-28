@@ -23,6 +23,8 @@ namespace nodex {
       static NAN_METHOD(Signal) {
         NanScope();
         
+        v8::Isolate* debug_isolate = v8::Debug::GetDebugContext()->GetIsolate();
+        
         size_t length;
         const char* msg = NanCString(args[0], &length);
         uint16_t* command = (uint16_t*)malloc(sizeof(uint16_t) * (length + 1));
@@ -30,7 +32,7 @@ namespace nodex {
         for (int i = 0; i < length; i++) {
           command[i] = msg[i];
         }
-        v8::Debug::SendCommand(command, length);
+        v8::Debug::SendCommand(debug_isolate, command, length);
         
         NanReturnUndefined();
       };
