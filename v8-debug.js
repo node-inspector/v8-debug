@@ -63,7 +63,7 @@ function V8Debug() {
           this.running_ = response.running;
         }
         response.running = this.running_;
-        return response.toJSONProtocol();
+        return JSON.stringify(response);
       } catch (e) {
         // Failed to generate response - return generic error.
         return '{"seq":' + response.seq + ',' +
