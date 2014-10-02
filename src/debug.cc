@@ -73,6 +73,9 @@ namespace nodex {
     NODE_SET_METHOD(target, "signal", Debug::Signal);
     NODE_SET_METHOD(target, "mirror", Debug::Mirror);
     NODE_SET_METHOD(target, "runScript", Debug::RunScript);
+    
+    const char allow_natives_syntax[] = "--allow_natives_syntax";
+    v8::V8::SetFlagsFromString(allow_natives_syntax, sizeof(allow_natives_syntax) - 1);
   }
   
   NODE_MODULE(debug, Initialize)
