@@ -54,4 +54,4 @@ console.log = (function(fn) {
   }
 } (console.log));
 ```
-For more experience see [protocol documentation](https://github.com/buggerjs/bugger-v8-client/blob/jk/document-commands/PROTOCOL.md)
+For more experience see [protocol documentation](https://github.com/buggerjs/bugger-v8-client/blob/master/PROTOCOL.md)
