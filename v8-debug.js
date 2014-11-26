@@ -84,11 +84,14 @@ function V8Debug() {
   };
 }
 
-V8Debug.prototype.register = function(name, func) {
+V8Debug.prototype.register =
+V8Debug.prototype.registerCommand = function(name, func) {
   this._processor.extendedProcessDebugJSONRequestHandles_[name] = func;
 };
 
-V8Debug.prototype.command = function(name, attributes, userdata) {
+V8Debug.prototype.command =
+V8Debug.prototype.execCommand = 
+V8Debug.prototype.emitEvent = function(name, attributes, userdata) {
   var message = {
     seq: 1,
     type: 'request',
@@ -98,8 +101,6 @@ V8Debug.prototype.command = function(name, attributes, userdata) {
   binding.signal(JSON.stringify(message));
 };
 
-V8Debug.prototype.mirror = binding.mirror;
-
 V8Debug.prototype.commandToEvent = function(request, response) {
   response.type = 'event';
   response.event = response.command;
@@ -108,6 +109,11 @@ V8Debug.prototype.commandToEvent = function(request, response) {
   delete response.request_seq;
 };
 
+V8Debug.prototype.registerEvent = function(name) {
+  this._processor.extendedProcessDebugJSONRequestHandles_[name] = this.commandToEvent;
+};
+
+V8Debug.prototype.get =
 V8Debug.prototype.runInDebugContext = function(script) {
   if (typeof script == 'function') script = script.toString() + '()';
   
