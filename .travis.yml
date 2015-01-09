@@ -8,7 +8,7 @@ os:
 
 env:
   matrix:
-    - export NODE_VERSION="0.10.35"
+    - export NODE_VERSION="0.10"
     - export NODE_VERSION="0.11.13"
   global:
     - node_pre_gyp_region="eu-central-1"
