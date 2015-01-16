@@ -52,6 +52,15 @@ namespace nodex {
 
         NanReturnValue(script->Run());
       };
+
+      static NAN_METHOD(AllowNatives) {
+        NanScope();
+
+        const char allow_natives_syntax[] = "--allow_natives_syntax";
+        v8::V8::SetFlagsFromString(allow_natives_syntax, sizeof(allow_natives_syntax) - 1);
+
+        NanReturnUndefined();
+      }
     private:
       Debug() {}
       ~Debug() {}
@@ -63,9 +72,7 @@ namespace nodex {
     NODE_SET_METHOD(target, "call", Debug::Call);
     NODE_SET_METHOD(target, "signal", Debug::Signal);
     NODE_SET_METHOD(target, "runScript", Debug::RunScript);
-    
-    const char allow_natives_syntax[] = "--allow_natives_syntax";
-    v8::V8::SetFlagsFromString(allow_natives_syntax, sizeof(allow_natives_syntax) - 1);
+    NODE_SET_METHOD(target, "allowNatives", Debug::RunScript);
   }
 
   NODE_MODULE(debug, Initialize)
