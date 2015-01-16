@@ -1,4 +1,5 @@
 var binary = require('node-pre-gyp');
+var fs = require('fs');
 var path = require('path');
 var binding_path = binary.find(path.resolve(path.join(__dirname,'./package.json')));
 var binding = require(binding_path);
@@ -7,6 +8,7 @@ var inherits = require('util').inherits;
 
 inherits(V8Debug, EventEmitter);
 function V8Debug() {
+  this._webkitProtocolEnabled = false;
   this._processor = this.runInDebugContext('DebugCommandProcessor').prototype;
 
   this._oldProcessDebugRequest = this._processor.processDebugRequest;
@@ -150,6 +152,62 @@ V8Debug.prototype.runInDebugContext = function(script) {
   script = /\);$/.test(script) ? script : '(' + script + ');';
 
   return binding.runScript(script);
+};
+
+V8Debug.prototype.enableWebkitProtocol = function() {
+  if (this._webkitProtocolEnabled) return;
+
+  var DebuggerScriptSource,
+      DebuggerScript,
+      InjectedScriptSource,
+      InjectedScript,
+      InjectedScriptHostSource,
+      InjectedScriptHost;
+
+  function prepareSource(source) {
+    return 'var ToggleMirrorCache = ToggleMirrorCache || function() {};\n' +
+    '(function() {' +
+      ('' + source).replace(/^.*?"use strict";(\r?\n.*?)*\(/m, '\r\n"use strict";\nreturn (') +
+    '}());';
+  }
+
+  DebuggerScriptSource = prepareSource(
+    fs.readFileSync('InjectedScript/DebuggerScript.js', 'utf8'));
+  DebuggerScript = this.runInDebugContext(DebuggerScriptSource);
+
+  InjectedScriptSource = prepareSource(
+    fs.readFileSync('InjectedScript/InjectedScriptSource.js', 'utf8'));
+  InjectedScript = this.runInDebugContext(InjectedScriptSource);
+
+  InjectedScriptHostSource = prepareSource(
+    fs.readFileSync('InjectedScript/InjectedScriptHost.js', 'utf8'));
+  InjectedScriptHost = this.runInDebugContext(InjectedScriptHostSource)(binding, DebuggerScript);
+
+  var injectedScript = InjectedScript(InjectedScriptHost, global, 1);
+
+  this.registerAgentCommand = function(command, parameters, callback) {
+    this.registerCommand(command, new WebkitProtocolCallback(parameters, callback));
+  };
+
+  this._webkitProtocolEnabled = true;
+
+  function WebkitProtocolCallback(argsList, callback) {
+    return function(request, response) {
+      InjectedScriptHost.execState = this.exec_state_;
+
+      var args = argsList.map(function(name) {
+        return request.arguments[name];
+      });
+
+      callback.call(this, args, response, injectedScript, DebuggerScript);
+
+      InjectedScriptHost.execState = null;
+    }
+  }
+}
+
+V8Debug.prototype.registerAgentCommand = function(command, parameters, callback) {
+  throw new Error('Use "enableWebkitProtocol" before use this method');
 };
 
 module.exports = new V8Debug();
