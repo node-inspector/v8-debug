@@ -39,6 +39,6 @@
   },
   "scripts": {
     "install": "node-pre-gyp install --fallback-to-build",
-    "test": "mocha"
+    "test": "mocha --debug"
   }
 }
