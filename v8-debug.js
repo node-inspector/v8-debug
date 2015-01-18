@@ -6,6 +6,10 @@ var binding = require(binding_path);
 var EventEmitter = require('events').EventEmitter;
 var inherits = require('util').inherits;
 
+var DebuggerScriptLink = require.resolve(__dirname + '/InjectedScript/DebuggerScript.js');
+var InjectedScriptLink = require.resolve(__dirname + '/InjectedScript/InjectedScriptSource.js');
+var InjectedScriptHostLink = require.resolve(__dirname + '/InjectedScript/InjectedScriptHost.js');
+
 inherits(V8Debug, EventEmitter);
 function V8Debug() {
   this._webkitProtocolEnabled = false;
@@ -171,16 +175,13 @@ V8Debug.prototype.enableWebkitProtocol = function() {
     '}());';
   }
 
-  DebuggerScriptSource = prepareSource(
-    fs.readFileSync('InjectedScript/DebuggerScript.js', 'utf8'));
+  DebuggerScriptSource = prepareSource(fs.readFileSync(DebuggerScriptLink, 'utf8'));
   DebuggerScript = this.runInDebugContext(DebuggerScriptSource);
 
-  InjectedScriptSource = prepareSource(
-    fs.readFileSync('InjectedScript/InjectedScriptSource.js', 'utf8'));
+  InjectedScriptSource = prepareSource(fs.readFileSync(InjectedScriptLink, 'utf8'));
   InjectedScript = this.runInDebugContext(InjectedScriptSource);
 
-  InjectedScriptHostSource = prepareSource(
-    fs.readFileSync('InjectedScript/InjectedScriptHost.js', 'utf8'));
+  InjectedScriptHostSource = prepareSource(fs.readFileSync(InjectedScriptHostLink, 'utf8'));
   InjectedScriptHost = this.runInDebugContext(InjectedScriptHostSource)(binding, DebuggerScript);
 
   var injectedScript = InjectedScript(InjectedScriptHost, global, 1);
@@ -204,7 +205,7 @@ V8Debug.prototype.enableWebkitProtocol = function() {
       InjectedScriptHost.execState = null;
     }
   }
-}
+};
 
 V8Debug.prototype.registerAgentCommand = function(command, parameters, callback) {
   throw new Error('Use "enableWebkitProtocol" before use this method');
