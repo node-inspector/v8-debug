@@ -23,19 +23,20 @@ namespace nodex {
       static NAN_METHOD(Signal) {
         NanScope();
 
-        size_t length;
-        const char* msg = NanCString(args[0], &length);
-        uint16_t* command = (uint16_t*)malloc(sizeof(uint16_t) * (length + 1));
-        command[length] = 0;
-        for (size_t i = 0; i < length; i++) {
+        int length = args[0]->ToString()->Length();
+        const char* msg = *NanUtf8String(args[0]);
+        
+        uint16_t* command = new uint16_t[length + 1];
+        for (int i = 0; i < length; i++)
           command[i] = msg[i];
-        }
+        command[length] = '\0';
 #if (NODE_MODULE_VERSION > 0x000B)
         v8::Isolate* debug_isolate = v8::Debug::GetDebugContext()->GetIsolate();
         v8::Debug::SendCommand(debug_isolate, command, length);
 #else
         v8::Debug::SendCommand(command, length);
 #endif
+        delete[] command;
         NanReturnUndefined();
       };
 

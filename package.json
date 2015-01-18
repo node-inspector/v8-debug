@@ -29,7 +29,7 @@
   "main": "v8-debug",
   "dependencies": {
     "node-pre-gyp": "^0.6.0",
-    "nan": "~1.2.0"
+    "nan": "~1.5.0"
   },
   "bundledDependencies":["node-pre-gyp"],
   "devDependencies": {
