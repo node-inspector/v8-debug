@@ -129,7 +129,7 @@ V8Debug.prototype.execCommand =
 V8Debug.prototype.emitEvent = execCommand;
 function execCommand(name, attributes, userdata) {
   var message = {
-    seq: 1,
+    seq: 0,
     type: 'request',
     command: name,
     arguments: attributes || {}

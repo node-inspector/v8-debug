@@ -9,7 +9,10 @@ _debugger.stderr.on('data', function(data) {
 
 describe('v8-debug', function() {
   before(function(done) {
-    _debugger.stdout.on('data', done.bind(null, null));
+    _debugger.stdout.on('data', function(data) {
+      console.log('    ' + data);
+      done();
+    });
   });
 
   describe('function `runInDebugContext`', function() {
