@@ -1,5 +1,6 @@
 function Debugger(port) {
   require('net').createConnection(port)
+    .on('connect', console.log.bind(console, 'connected'))
     .on('error', console.error.bind(console))
     .on('close', process.exit.bind(process))
     .setEncoding('utf8');

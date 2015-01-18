@@ -8,6 +8,10 @@ _debugger.stderr.on('data', function(data) {
 });
 
 describe('v8-debug', function() {
+  before(function(done) {
+    _debugger.stdout.on('data', done.bind(null, null));
+  });
+
   describe('function `runInDebugContext`', function() {
     it('returns Debug object', function() {
       var Debug = v8debug.runInDebugContext('Debug');
