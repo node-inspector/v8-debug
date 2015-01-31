@@ -64,12 +64,12 @@ namespace nodex {
 
 #if (NODE_MODULE_VERSION > 0x000E)
         exceptionDetails->Set(NanNew<v8::String>("url"), message->GetScriptOrigin().ResourceName());
-        exceptionDetails->Set(NanNew<v8::String>("scriptId"), NanNew<v8::Integer>(message->GetScriptOrigin().ScriptID()->Value()));
+        exceptionDetails->Set(NanNew<v8::String>("scriptId"), NanNew<v8::Number>(message->GetScriptOrigin().ScriptID()->Value()));
 #else
         exceptionDetails->Set(NanNew<v8::String>("url"), message->GetScriptResourceName());
 #endif
         exceptionDetails->Set(NanNew<v8::String>("line"), NanNew<v8::Integer>(message->GetLineNumber()));
-        exceptionDetails->Set(NanNew<v8::String>("column"), NanNew<v8::Integer>(message->GetStartColumn()));
+        exceptionDetails->Set(NanNew<v8::String>("column"), NanNew<v8::Number>(message->GetStartColumn()));
 
         if (!message->GetStackTrace().IsEmpty())
           exceptionDetails->Set(NanNew<v8::String>("stackTrace"), message->GetStackTrace()->AsArray());
@@ -194,7 +194,7 @@ namespace nodex {
         else
           result_type = *NanUtf8String(args[0]);
 
-        if (!result.IsEmpty() && result_type == "Object") {
+        if (!result.IsEmpty() && strcmp(result_type, "Object") == 0) {
           v8::Local<v8::String> constructorSymbol = NanNew<v8::String>("constructor");
           if (object->HasRealNamedProperty(constructorSymbol) && !object->HasRealNamedCallbackProperty(constructorSymbol)) {
             v8::TryCatch tryCatch;
@@ -205,7 +205,7 @@ namespace nodex {
                 result = constructorName;
             }
           }
-          if (result_type == "Object" && object->IsFunction())
+          if (strcmp(result_type, "Object") == 0 && object->IsFunction())
             result = NanNew<v8::String>("Function");
         }
 
