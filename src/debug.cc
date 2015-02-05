@@ -20,12 +20,14 @@ namespace nodex {
         NanReturnUndefined();
       };
 
-      static NAN_METHOD(Signal) {
+      static NAN_METHOD(SendCommand) {
         NanScope();
 
         v8::String::Value command(args[0]);
 #if (NODE_MODULE_VERSION > 0x000B)
         v8::Isolate* debug_isolate = v8::Debug::GetDebugContext()->GetIsolate();
+        v8::HandleScope debug_scope(debug_isolate);
+        debug_isolate->Enter();
         v8::Debug::SendCommand(debug_isolate, *command, command.length());
 #else
         v8::Debug::SendCommand(*command, command.length());
@@ -310,7 +312,7 @@ namespace nodex {
     NanScope();
 
     NODE_SET_METHOD(target, "call", Debug::Call);
-    NODE_SET_METHOD(target, "signal", Debug::Signal);
+    NODE_SET_METHOD(target, "sendCommand", Debug::SendCommand);
     NODE_SET_METHOD(target, "runScript", Debug::RunScript);
     NODE_SET_METHOD(target, "allowNatives", Debug::RunScript);
 

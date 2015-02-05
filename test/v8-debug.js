@@ -41,7 +41,7 @@ describe('v8-debug', function() {
       expect(v8debug.registerAgentCommand.bind(v8debug, 'command', [], function() {
         done();
       })).to.not.throw();
-      v8debug.execCommand('command');
+      v8debug.sendCommand('command');
     });
   });
 });

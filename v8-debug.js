@@ -68,7 +68,7 @@ function V8Debug() {
           if (asyncResponse) return JSON.stringify(asyncResponse);
 
           asyncHandle.call(this, request, response, function(error) {
-            execCommand(request.command, {
+            sendCommand(request.command, {
               asyncResponse: error || response
             });
           }.bind(this));
@@ -125,16 +125,16 @@ V8Debug.prototype.registerAsyncCommand = function(name, func) {
 };
 
 V8Debug.prototype.command =
-V8Debug.prototype.execCommand =
-V8Debug.prototype.emitEvent = execCommand;
-function execCommand(name, attributes, userdata) {
+V8Debug.prototype.sendCommand =
+V8Debug.prototype.emitEvent = sendCommand;
+function sendCommand(name, attributes, userdata) {
   var message = {
     seq: 0,
     type: 'request',
     command: name,
     arguments: attributes || {}
   };
-  binding.signal(JSON.stringify(message));
+  binding.sendCommand(JSON.stringify(message));
 };
 
 V8Debug.prototype.commandToEvent = function(request, response) {
