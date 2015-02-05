@@ -268,9 +268,9 @@ namespace nodex {
           return NanThrowTypeError("Argument 2 must be an array.");
 
         v8::Handle<v8::Array> arguments = v8::Handle<v8::Array>::Cast(args[2]);
-        size_t argc = arguments->Length();
+        int argc = arguments->Length();
         v8::Handle<v8::Value> *argv = new v8::Handle<v8::Value>[argc];
-        for (size_t i = 0; i < argc; ++i)
+        for (int i = 0; i < argc; ++i)
             argv[i] = arguments->Get(i);
 
         v8::Local<v8::Value> result = function->Call(receiver, argc, argv);
