@@ -1,4 +1,5 @@
 [![Build Status](https://secure.travis-ci.org/node-inspector/v8-debug.png?branch=master)](http://travis-ci.org/node-inspector/v8-debug)
+[![Build status](https://ci.appveyor.com/api/projects/status/rb02h15b61xyryhx/branch/master?svg=true)](https://ci.appveyor.com/project/3y3/v8-debug-145/branch/master)
 
 # v8-debug
 Provides extending API for [node](http://github.com/ry/node) internal debugger protocol (based on [v8 debugger protocol](https://code.google.com/p/v8/wiki/DebuggerProtocol))
@@ -6,9 +7,9 @@ Provides extending API for [node](http://github.com/ry/node) internal debugger p
 This is a part of [node-inspector](http://github.com/node-inspector/node-inspector).
 
 ## Installation
-
-    npm install v8-debug
-
+```
+npm install v8-debug
+```
 ## API
 
 | Command | Params | Type | Description |
