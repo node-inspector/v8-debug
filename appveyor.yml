@@ -5,15 +5,19 @@ environment:
     secure: jJxKoyWputzRz2EjAT9i/vBzYt2+lcjKZ5D6O5TBaS9+anpYHn2XWbOut5dkOgh0
   node_pre_gyp_region: eu-central-1
   matrix:
+    - NODE_VERSION: 1.0
+      platform: x64
+    - NODE_VERSION: 1.0
+      platform: x86
     - NODE_VERSION: 0.12
       platform: x64
     - NODE_VERSION: 0.12
       platform: x86
-    - NODE_VERSION: 0.11.16
+    - NODE_VERSION: 0.11
       platform: x64
     - NODE_VERSION: 0.10
       platform: x64
-    - NODE_VERSION: 0.11.16
+    - NODE_VERSION: 0.11
       platform: x86
     - NODE_VERSION: 0.10
       platform: x86
@@ -23,7 +27,7 @@ os: unstable
 install:
   - cmd: SET PATH=%cd%\node_modules\.bin\;%PATH%
 
-  - ps: Install-Product node $env:NODE_VERSION $env:platform
+  - ps: Update-NodeJsInstallation (Get-NodeJsLatestBuild $env:NODE_VERSION) $env:platform
 
   - cmd: SET PUBLISH_BINARY=false
   - cmd: git describe --tags --always HEAD > _git_tag.tmp
