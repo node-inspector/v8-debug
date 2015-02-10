@@ -5,27 +5,21 @@ var binding_path = binary.find(path.resolve(path.join(__dirname,'./package.json'
 var binding = require(binding_path);
 var EventEmitter = require('events').EventEmitter;
 var inherits = require('util').inherits;
+var extend = require('util')._extend;
 
 var DebuggerScriptLink = require.resolve(__dirname + '/InjectedScript/DebuggerScript.js');
 var InjectedScriptLink = require.resolve(__dirname + '/InjectedScript/InjectedScriptSource.js');
 var InjectedScriptHostLink = require.resolve(__dirname + '/InjectedScript/InjectedScriptHost.js');
 
-inherits(V8Debug, EventEmitter);
-function V8Debug() {
-  this._webkitProtocolEnabled = false;
-  this._processor = this.runInDebugContext('DebugCommandProcessor').prototype;
-
-  this._oldProcessDebugRequest = this._processor.processDebugRequest;
-
-  this._processor.extendedProcessDebugJSONRequestHandles_ = {
+var overrides = {
+  extendedProcessDebugJSONRequestHandles_: {
     'disconnect': function(request, response) {
+      // TODO(3y3):
+      // This part of code was unreachable after node 0.12.0
+      // We need to deprecate it...
       var Module = require('module').Module;
       var moduleKey = module.id.replace(/\\\\|\/\//g, '$1');
 
-      this._processor.processDebugRequest = this._oldProcessDebugRequest;
-      delete this._oldProcessDebugRequest;
-      delete this._processor.extendedProcessDebugJSONRequest_;
-      delete this._processor.extendedProcessDebugJSONRequestHandles_;
       delete Module._cache[moduleKey];
 
       this._processor.disconnectRequest_(request, response);
@@ -33,11 +27,9 @@ function V8Debug() {
 
       this.emit('close');
     }.bind(this)
-  };
-
-  this._processor.extendedProcessDebugJSONRequestAsyncHandles_ = {};
-
-  this._processor.extendedProcessDebugJSONRequest_ = function(json_request) {
+  },
+  extendedProcessDebugJSONRequestAsyncHandles_: {},
+  extendedProcessDebugJSONRequest_: function(json_request) {
     var request;  // Current request.
     var response;  // Generated response.
     try {
@@ -106,35 +98,44 @@ function V8Debug() {
       // Failed in one of the catch blocks above - most generic error.
       return '{"seq":0,"type":"response","success":false,"message":"Internal error"}';
     }
-  };
-
-  this._processor.processDebugRequest = function WRAPPED_BY_NODE_INSPECTOR(request) {
+  },
+  processDebugRequest: function WRAPPED_BY_NODE_INSPECTOR(request) {
     return this.extendedProcessDebugJSONRequest_(request)
       || this.processDebugJSONRequest(request);
-  };
+  }
+};
+
+inherits(V8Debug, EventEmitter);
+function V8Debug() {
+  this._webkitProtocolEnabled = false;
 }
 
 V8Debug.prototype.register =
 V8Debug.prototype.registerCommand = function(name, func) {
-  this._processor.extendedProcessDebugJSONRequestHandles_[name] = func;
+  overrides.extendedProcessDebugJSONRequestHandles_[name] = func;
 };
 
 V8Debug.prototype.registerAsync =
 V8Debug.prototype.registerAsyncCommand = function(name, func) {
-  this._processor.extendedProcessDebugJSONRequestAsyncHandles_[name] = func;
+  overrides.extendedProcessDebugJSONRequestAsyncHandles_[name] = func;
 };
 
 V8Debug.prototype.command =
 V8Debug.prototype.sendCommand =
 V8Debug.prototype.emitEvent = sendCommand;
 function sendCommand(name, attributes, userdata) {
-  var message = {
-    seq: 0,
-    type: 'request',
-    command: name,
-    arguments: attributes || {}
-  };
-  binding.sendCommand(JSON.stringify(message));
+  binding.call(function(execState) {
+    var proto = execState.debugCommandProcessor().__proto__;
+    extend(proto, overrides);
+    
+    var message = {
+      seq: 0,
+      type: 'request',
+      command: name,
+      arguments: attributes || {}
+    };
+    binding.sendCommand(JSON.stringify(message));
+  }.bind(this));
 };
 
 V8Debug.prototype.commandToEvent = function(request, response) {
@@ -146,7 +147,7 @@ V8Debug.prototype.commandToEvent = function(request, response) {
 };
 
 V8Debug.prototype.registerEvent = function(name) {
-  this._processor.extendedProcessDebugJSONRequestHandles_[name] = this.commandToEvent;
+  overrides.extendedProcessDebugJSONRequestHandles_[name] = this.commandToEvent;
 };
 
 V8Debug.prototype.get =

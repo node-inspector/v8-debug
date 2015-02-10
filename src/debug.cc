@@ -27,7 +27,6 @@ namespace nodex {
 #if (NODE_MODULE_VERSION > 0x000B)
         v8::Isolate* debug_isolate = v8::Debug::GetDebugContext()->GetIsolate();
         v8::HandleScope debug_scope(debug_isolate);
-        debug_isolate->Enter();
         v8::Debug::SendCommand(debug_isolate, *command, command.length());
 #else
         v8::Debug::SendCommand(*command, command.length());
