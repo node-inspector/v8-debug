@@ -7,6 +7,9 @@ var EventEmitter = require('events').EventEmitter;
 var inherits = require('util').inherits;
 var extend = require('util')._extend;
 
+// Don't cache debugger module
+delete require.cache[module.id];
+
 var DebuggerScriptLink = require.resolve(__dirname + '/InjectedScript/DebuggerScript.js');
 var InjectedScriptLink = require.resolve(__dirname + '/InjectedScript/InjectedScriptSource.js');
 var InjectedScriptHostLink = require.resolve(__dirname + '/InjectedScript/InjectedScriptHost.js');
@@ -14,17 +17,9 @@ var InjectedScriptHostLink = require.resolve(__dirname + '/InjectedScript/Inject
 var overrides = {
   extendedProcessDebugJSONRequestHandles_: {
     'disconnect': function(request, response) {
+      // Unregister v8-debug dependencies on this event
       // TODO(3y3):
-      // This part of code was unreachable after node 0.12.0
-      // We need to deprecate it...
-      var Module = require('module').Module;
-      var moduleKey = module.id.replace(/\\\\|\/\//g, '$1');
-
-      delete Module._cache[moduleKey];
-
-      this._processor.disconnectRequest_(request, response);
-      delete this._processor;
-
+      // We can't emit this after >=0.11.15
       this.emit('close');
     }.bind(this)
   },
