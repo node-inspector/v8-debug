@@ -15,14 +15,7 @@ var InjectedScriptLink = require.resolve(__dirname + '/InjectedScript/InjectedSc
 var InjectedScriptHostLink = require.resolve(__dirname + '/InjectedScript/InjectedScriptHost.js');
 
 var overrides = {
-  extendedProcessDebugJSONRequestHandles_: {
-    'disconnect': function(request, response) {
-      // Unregister v8-debug dependencies on this event
-      // TODO(3y3):
-      // We can't emit this after >=0.11.15
-      this.emit('close');
-    }.bind(this)
-  },
+  extendedProcessDebugJSONRequestHandles_: {},
   extendedProcessDebugJSONRequestAsyncHandles_: {},
   extendedProcessDebugJSONRequest_: function(json_request) {
     var request;  // Current request.
@@ -103,7 +96,18 @@ var overrides = {
 inherits(V8Debug, EventEmitter);
 function V8Debug() {
   this._webkitProtocolEnabled = false;
+  var proto = this.get('DebugCommandProcessor.prototype');
+  this._registerPredefinedHandles(overrides);
+  extend(proto, overrides);
 }
+
+V8Debug.prototype._registerPredefinedHandles = function(overrides) {
+  overrides.extendedProcessDebugJSONRequestHandles_['disconnect'] = function(request, response) {
+    // Unregister v8-debug dependencies on this event
+    // We can't emit this after >=0.11.15
+    this.emit('close');
+  }.bind(this)
+};
 
 V8Debug.prototype.register =
 V8Debug.prototype.registerCommand = function(name, func) {
@@ -121,7 +125,9 @@ V8Debug.prototype.emitEvent = sendCommand;
 function sendCommand(name, attributes, userdata) {
   binding.call(function(execState) {
     var proto = execState.debugCommandProcessor().__proto__;
-    extend(proto, overrides);
+    
+    if (proto.processDebugRequest !== overrides.processDebugRequest)
+      extend(proto, overrides);
     
     var message = {
       seq: 0,
