@@ -96,17 +96,51 @@ var overrides = {
 inherits(V8Debug, EventEmitter);
 function V8Debug() {
   this._webkitProtocolEnabled = false;
-  var proto = this.get('DebugCommandProcessor.prototype');
-  this._registerPredefinedHandles(overrides);
-  extend(proto, overrides);
+
+  // NOTE: Call `_setDebugEventListener` before all other changes in Debug Context.
+  // After node 0.12.0 this function serves to allocate Debug Context
+  // like a persistent value, that saves all our changes.
+  this._setDebugEventListener();
+  this._wrapDebugCommandProcessor();
+
+  this.once('close', function() {
+    this._unwrapDebugCommandProcessor();
+    this._unsetDebugEventListener();
+    process.nextTick(function() {
+      this.removeAllListeners();
+    }.bind(this));
+  });
 }
 
-V8Debug.prototype._registerPredefinedHandles = function(overrides) {
+V8Debug.prototype._setDebugEventListener = function() {
+  var Debug = this.get('Debug');
+  Debug.setListener(function(_, execState, event) {
+    // TODO(3y3): Handle events here
+  });
+};
+
+V8Debug.prototype._unsetDebugEventListener = function() {
+  var Debug = this.get('Debug');
+  Debug.setListener(null);
+};
+
+V8Debug.prototype._wrapDebugCommandProcessor = function() {
+  var proto = this.get('DebugCommandProcessor.prototype');
+  overrides.processDebugRequest_ = proto.processDebugRequest;
+  extend(proto, overrides);
   overrides.extendedProcessDebugJSONRequestHandles_['disconnect'] = function(request, response) {
-    // Unregister v8-debug dependencies on this event
-    // We can't emit this after >=0.11.15
     this.emit('close');
-  }.bind(this)
+    this.processDebugJSONRequest(request);
+  }.bind(this);
+};
+
+V8Debug.prototype._unwrapDebugCommandProcessor = function() {
+  var proto = this.get('DebugCommandProcessor.prototype');
+  proto.processDebugRequest = proto.processDebugRequest_;
+  delete proto.processDebugRequest_;
+  delete proto.extendedProcessDebugJSONRequest_;
+  delete proto.extendedProcessDebugJSONRequestHandles_;
+  delete proto.extendedProcessDebugJSONRequestAsyncHandles_;
 };
 
 V8Debug.prototype.register =
@@ -123,20 +157,13 @@ V8Debug.prototype.command =
 V8Debug.prototype.sendCommand =
 V8Debug.prototype.emitEvent = sendCommand;
 function sendCommand(name, attributes, userdata) {
-  binding.call(function(execState) {
-    var proto = execState.debugCommandProcessor().__proto__;
-    
-    if (proto.processDebugRequest !== overrides.processDebugRequest)
-      extend(proto, overrides);
-    
-    var message = {
-      seq: 0,
-      type: 'request',
-      command: name,
-      arguments: attributes || {}
-    };
-    binding.sendCommand(JSON.stringify(message));
-  }.bind(this));
+  var message = {
+    seq: 0,
+    type: 'request',
+    command: name,
+    arguments: attributes || {}
+  };
+  binding.sendCommand(JSON.stringify(message));
 };
 
 V8Debug.prototype.commandToEvent = function(request, response) {

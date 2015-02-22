@@ -44,4 +44,11 @@ describe('v8-debug', function() {
       v8debug.sendCommand('command');
     });
   });
+
+  describe('events.', function() {
+    it('Emits `close` on disconnect command', function(done) {
+      v8debug.on('close', done);
+      v8debug.sendCommand('disconnect');
+    });
+  });
 });
