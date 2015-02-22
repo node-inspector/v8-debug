@@ -10,9 +10,12 @@ var extend = require('util')._extend;
 // Don't cache debugger module
 delete require.cache[module.id];
 
-var DebuggerScriptLink = require.resolve(__dirname + '/InjectedScript/DebuggerScript.js');
-var InjectedScriptLink = require.resolve(__dirname + '/InjectedScript/InjectedScriptSource.js');
-var InjectedScriptHostLink = require.resolve(__dirname + '/InjectedScript/InjectedScriptHost.js');
+function InjectedScriptDir(link) { 
+  return require.resolve(__dirname + '/InjectedScript/' + link);
+};
+var DebuggerScriptLink = InjectedScriptDir('DebuggerScript.js');
+var InjectedScriptLink = InjectedScriptDir('InjectedScriptSource.js');
+var InjectedScriptHostLink = InjectedScriptDir('InjectedScriptHost.js');
 
 var overrides = {
   extendedProcessDebugJSONRequestHandles_: {},
@@ -237,7 +240,7 @@ V8Debug.prototype.enableWebkitProtocol = function() {
 };
 
 V8Debug.prototype.registerAgentCommand = function(command, parameters, callback) {
-  throw new Error('Use "enableWebkitProtocol" before use this method');
+  throw new Error('Use "enableWebkitProtocol" before using this method');
 };
 
 module.exports = new V8Debug();
