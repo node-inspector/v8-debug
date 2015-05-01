@@ -28,8 +28,8 @@
   },
   "main": "v8-debug",
   "dependencies": {
-    "node-pre-gyp": "^0.6.4",
-    "nan": "^1.6.2"
+    "node-pre-gyp": "^0.6.5",
+    "nan": "~1.8.4"
   },
   "bundledDependencies":["node-pre-gyp"],
   "devDependencies": {
