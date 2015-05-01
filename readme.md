@@ -1,4 +1,4 @@
-[![Build Status](https://secure.travis-ci.org/node-inspector/v8-debug.png?branch=master)](http://travis-ci.org/node-inspector/v8-debug)
+[![Build Status](https://travis-ci.org/node-inspector/v8-debug.svg?branch=master)](https://travis-ci.org/node-inspector/v8-debug)
 [![Build status](https://ci.appveyor.com/api/projects/status/rb02h15b61xyryhx/branch/master?svg=true)](https://ci.appveyor.com/project/3y3/v8-debug-145/branch/master)
 [![npm version](https://badge.fury.io/js/v8-debug.svg)](http://badge.fury.io/js/v8-debug)
 
