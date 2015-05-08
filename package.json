@@ -31,14 +31,14 @@
     "node-pre-gyp": "^0.6.5",
     "nan": "~1.8.4"
   },
-  "bundledDependencies":["node-pre-gyp"],
   "devDependencies": {
     "aws-sdk": "^2.1.8",
     "mocha": "^2.1.0",
     "chai": "^1.10.0"
   },
   "scripts": {
-    "install": "node-pre-gyp install --fallback-to-build",
+    "preinstall": " ",
+    "postinstall": "node-pre-gyp install --fallback-to-build",
     "test": "mocha --debug"
   }
 }
