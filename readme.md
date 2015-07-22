@@ -14,9 +14,11 @@ npm install v8-debug
 ## API
 
 ### registerCommand(name, callback)
-Registers new debug processor command, like `lookup`
-`callback` accepts two arguments - **request** and **response**
-You need to modify `response.body` if you want to return something to caller
+Registers new debug processor command, like `lookup`.
+
+`callback` accepts two arguments - **request** and **response**.
+
+You need to modify `response.body` if you want to return something to caller.
 ```js
 debug.registerCommand('_lookup', function(request, response) {
   var test = request.attributes;
@@ -29,15 +31,17 @@ debug.registerCommand('_lookup', function(request, response) {
 ```
 
 ### registerEvent(eventName)
-This is a shortcut for
+This is a shortcut for:
 ```js
 debug.registerCommand('someEvent', debug.commandToEvent);
 ```
 
 ### execCommand(commandName, attributes)
-Calls debug processor command like 'lookup'
-`attributes` will be passed to `registerCommand.callback` as `request.attributes`
-`attributes` needs to be valid JSON object
+Calls debug processor command like 'lookup'.
+
+`attributes` will be passed to `registerCommand.callback` as `request.attributes`.
+
+`attributes` needs to be valid JSON object.
 ```js
 debug.registerCommand('_lookup', function(request, response) {
   var test = request.attributes;
@@ -59,7 +63,9 @@ debug.emitEvent('myEvent', { attr: 'test' });
 
 ### commandToEvent(request, response)
 `response` object has a different structure for commands and events.
+
 By default `registerCommand.callback` receives command's response.
+
 This is a small converter.
 ```js
 debug.registerCommand('someEvent1', function(request, response) {
@@ -72,6 +78,7 @@ Use `debug.registerEvent` instead of this.
 
 ### runInDebugContext(script)
 (alias `get`)
+
 Evaluates string or function (will be stringifyed) in debug context.
 ```js
 var MakeMirror = debug.get('MakeMirror');
@@ -80,7 +87,7 @@ var mirror = MakeMirror({ test: 1 });
 
 ### getFromFrame(index, value)
 Tries to receive a `value` from targeted frame scopes
-```
+```js
 function a(options) {
   //...
   b();
