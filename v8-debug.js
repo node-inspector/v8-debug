@@ -10,7 +10,7 @@ var extend = require('util')._extend;
 // Don't cache debugger module
 delete require.cache[module.id];
 
-function InjectedScriptDir(link) { 
+function InjectedScriptDir(link) {
   return require.resolve(__dirname + '/InjectedScript/' + link);
 };
 var DebuggerScriptLink = InjectedScriptDir('DebuggerScript.js');
@@ -188,6 +188,29 @@ V8Debug.prototype.runInDebugContext = function(script) {
   script = /\);$/.test(script) ? script : '(' + script + ');';
 
   return binding.runScript(script);
+};
+
+V8Debug.prototype.getFromFrame = function(index, value) {
+  var result;
+
+  binding.call(function(execState) {
+    var _index = index + 1;
+    var _count = execState.frameCount();
+    if (_count > _index + 1 ) {
+      var frame = execState.frame(_index + 1);
+      _count = frame.scopeCount();
+      _index = 0;
+      while (_count --> 0) {
+        var scope = frame.scope(_index).scopeObject().value();
+        if (scope[value]) {
+          result = scope[value];
+          return;
+        }
+      }
+    }
+  });
+
+  return result;
 };
 
 V8Debug.prototype.enableWebkitProtocol = function() {
