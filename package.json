@@ -13,11 +13,11 @@
     "url": "https://github.com/node-inspector/v8-debug/blob/master/LICENSE"
   },
   "binary": {
-    "module_name" : "debug",
-    "module_path" : "./build/{module_name}/v{version}/{node_abi}-{platform}-{arch}/",
-    "remote_path" : "./{module_name}/v{version}/",
+    "module_name": "debug",
+    "module_path": "./build/{module_name}/v{version}/{node_abi}-{platform}-{arch}/",
+    "remote_path": "./{module_name}/v{version}/",
     "package_name": "{node_abi}-{platform}-{arch}.tar.gz",
-    "host"        : "https://node-inspector.s3.amazonaws.com/"
+    "host": "https://node-inspector.s3.amazonaws.com/"
   },
   "keywords": [
     "v8",
@@ -28,8 +28,8 @@
   },
   "main": "v8-debug",
   "dependencies": {
-    "node-pre-gyp": "^0.6.5",
-    "nan": "~1.8.4"
+    "nan": "^2.0.4",
+    "node-pre-gyp": "^0.6.5"
   },
   "devDependencies": {
     "aws-sdk": "^2.1.8",

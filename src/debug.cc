@@ -1,305 +1,339 @@
-#include <stdlib.h>
-#include "nan.h"
-#include "v8-debug.h"
+#include <nan.h>
+#include <v8-debug.h>
+
+
+using v8::Isolate;
+using v8::Handle;
+using v8::Local;
+using v8::Value;
+using v8::Number;
+using v8::Integer;
+using v8::String;
+using v8::Script;
+using v8::Object;
+using v8::Array;
+using v8::Context;
+using v8::Function;
+using v8::FunctionTemplate;
+using Nan::To;
+using Nan::New;
+using Nan::Get;
+using Nan::Set;
+using Nan::ForceSet;
+using Nan::SetMethod;
+using Nan::HandleScope;
+using Nan::EscapableHandleScope;
+using Nan::Undefined;
+using Nan::TryCatch;
+using Nan::ThrowError;
+using Nan::ThrowTypeError;
+using Nan::CompileScript;
+using Nan::RunScript;
+using Nan::MaybeLocal;
+using Nan::EmptyString;
+using Nan::BoundScript;
+using Nan::Utf8String;
 
 namespace nodex {
+
+
+#define CHK(VALUE)                                                            \
+  VALUE.ToLocalChecked()
+
+#define RETURN(VALUE) {                                                       \
+  info.GetReturnValue().Set(VALUE);                                           \
+  return;                                                                     \
+}
+
+#define SET(TARGET, NAME, VALUE)                                              \
+  Nan::Set(TARGET, CHK(Nan::New(NAME)), VALUE)
 
   class Debug {
     public:
 
       static NAN_METHOD(Call) {
-        NanScope();
-
-        if (args.Length() < 1) {
-          return NanThrowError("Error");
+        if (info.Length() < 1) {
+          return ThrowError("Error");
         }
 
-        v8::Handle<v8::Function> fn = v8::Handle<v8::Function>::Cast(args[0]);
+        Handle<Function> fn = Handle<Function>::Cast(info[0]);
         v8::Debug::Call(fn);
 
-        NanReturnUndefined();
+        RETURN(Undefined());
       };
 
       static NAN_METHOD(SendCommand) {
-        NanScope();
-
-        v8::String::Value command(args[0]);
+        String::Value command(info[0]);
 #if (NODE_MODULE_VERSION > 0x000B)
-        v8::Isolate* debug_isolate = v8::Debug::GetDebugContext()->GetIsolate();
+        Isolate* debug_isolate = v8::Debug::GetDebugContext()->GetIsolate();
         v8::HandleScope debug_scope(debug_isolate);
         v8::Debug::SendCommand(debug_isolate, *command, command.length());
 #else
         v8::Debug::SendCommand(*command, command.length());
 #endif
-        NanReturnUndefined();
+        RETURN(Undefined());
       };
 
       static NAN_METHOD(RunScript) {
-        NanScope();
+        Local<String> script_source = CHK(To<String>(info[0]));
 
-        v8::Local<v8::String> script_source(args[0]->ToString());
         if (script_source.IsEmpty())
-          NanReturnUndefined();
-        v8::Context::Scope context_scope(v8::Debug::GetDebugContext());
-        v8::Local<v8::Script> script = v8::Script::Compile(script_source);
-        if (script.IsEmpty())
-          NanReturnUndefined();
+          RETURN(Undefined());
 
-        NanReturnValue(script->Run());
+        Context::Scope context_scope(v8::Debug::GetDebugContext());
+
+        Local<BoundScript> script = CHK(CompileScript(script_source));
+
+        if (script.IsEmpty())
+          RETURN(Undefined());
+
+        RETURN(CHK(Nan::RunScript(script)));
       };
 
       static NAN_METHOD(AllowNatives) {
-        NanScope();
-
         const char allow_natives_syntax[] = "--allow_natives_syntax";
         v8::V8::SetFlagsFromString(allow_natives_syntax, sizeof(allow_natives_syntax) - 1);
 
-        NanReturnUndefined();
+        RETURN(Undefined());
       }
 
       static v8::Handle<v8::Object> createExceptionDetails(v8::Handle<v8::Message> message) {
-        NanEscapableScope();
+        EscapableHandleScope scope;
 
-        v8::Handle<v8::Object> exceptionDetails = NanNew<v8::Object>();
-        exceptionDetails->Set(NanNew<v8::String>("text"), message->Get());
+        Local<Object> exceptionDetails = New<Object>();
+        SET(exceptionDetails, "text", message->Get());
 
 #if (NODE_MODULE_VERSION > 0x000E)
-        exceptionDetails->Set(NanNew<v8::String>("url"), message->GetScriptOrigin().ResourceName());
-        exceptionDetails->Set(NanNew<v8::String>("scriptId"), NanNew<v8::Number>(message->GetScriptOrigin().ScriptID()->Value()));
+        SET(exceptionDetails, "url", message->GetScriptOrigin().ResourceName());
+        SET(exceptionDetails, "scriptId", New<Integer>((int32_t)message->GetScriptOrigin().ScriptID()->Value()));
 #else
-        exceptionDetails->Set(NanNew<v8::String>("url"), message->GetScriptResourceName());
+        SET(exceptionDetails, "url", message->GetScriptResourceName());
 #endif
-        exceptionDetails->Set(NanNew<v8::String>("line"), NanNew<v8::Integer>(message->GetLineNumber()));
-        exceptionDetails->Set(NanNew<v8::String>("column"), NanNew<v8::Number>(message->GetStartColumn()));
+        SET(exceptionDetails, "line", New<Integer>(message->GetLineNumber()));
+        SET(exceptionDetails, "column", New<Number>(message->GetStartColumn()));
 
         if (!message->GetStackTrace().IsEmpty())
-          exceptionDetails->Set(NanNew<v8::String>("stackTrace"), message->GetStackTrace()->AsArray());
+          SET(exceptionDetails, "stackTrace", message->GetStackTrace()->AsArray());
         else
-          exceptionDetails->Set(NanNew<v8::String>("stackTrace"), NanUndefined());
+          SET(exceptionDetails, "stackTrace", Undefined());
 
-        return NanEscapeScope(exceptionDetails);
+        return scope.Escape(exceptionDetails);
       };
 
       static NAN_METHOD(EvaluateWithExceptionDetails) {
-        NanScope();
+        if (info.Length() < 1)
+          return ThrowError("One argument expected.");
 
-        if (args.Length() < 1)
-          return NanThrowError("One argument expected.");
-
-        v8::Local<v8::String> expression = args[0]->ToString();
+        Local<String> expression = CHK(To<String>(info[0]));
         if (expression.IsEmpty())
-          return NanThrowTypeError("The argument must be a string.");
+          return ThrowTypeError("The argument must be a string.");
 
-        v8::TryCatch tryCatch;
-        v8::Handle<v8::Value> result = NanRunScript(NanCompileScript(expression));
+        TryCatch tryCatch;
+        Local<BoundScript> script = CHK(CompileScript(expression));
+        Local<Value> result = CHK(Nan::RunScript(script));
 
-        v8::Local<v8::Object> wrappedResult = NanNew<v8::Object>();
+        Local<Object> wrappedResult = New<Object>();
         if (tryCatch.HasCaught()) {
-          wrappedResult->Set(NanNew<v8::String>("result"), tryCatch.Exception());
-          wrappedResult->Set(NanNew<v8::String>("exceptionDetails"), createExceptionDetails(tryCatch.Message()));
+          SET(wrappedResult, "result", tryCatch.Exception());
+          SET(wrappedResult, "exceptionDetails", createExceptionDetails(tryCatch.Message()));
         } else {
-          wrappedResult->Set(NanNew<v8::String>("result"), result);
-          wrappedResult->Set(NanNew<v8::String>("exceptionDetails"), NanUndefined());
+          SET(wrappedResult, "result", result);
+          SET(wrappedResult, "exceptionDetails", Undefined());
         }
 
-        NanReturnValue(wrappedResult);
+        RETURN(wrappedResult);
       };
 
       static NAN_METHOD(SetNonEnumProperty) {
-        NanScope();
+        if (info.Length() < 3)
+          return ThrowError("Three arguments expected.");
+        if (!info[0]->IsObject())
+          return ThrowTypeError("Argument 0 must be an object.");
+        if (!info[1]->IsString())
+          return ThrowTypeError("Argument 1 must be a string.");
 
-        if (args.Length() < 3)
-          return NanThrowError("Three arguments expected.");
-        if (!args[0]->IsObject())
-          return NanThrowTypeError("Argument 0 must be an object.");
-        if (!args[1]->IsString())
-          return NanThrowTypeError("Argument 1 must be a string.");
+        Local<Object> object = CHK(To<Object>(info[0]));
+        ForceSet(object, info[1], info[2], v8::DontEnum);
 
-        v8::Local<v8::Object> object = args[0]->ToObject();
-        object->ForceSet(args[1], args[2], v8::DontEnum);
-
-        NanReturnUndefined();
+        RETURN(Undefined());
       };
 
       static NAN_METHOD(Subtype) {
-        NanScope();
+        if (info.Length() < 1)
+          return ThrowError("One argument expected.");
 
-        if (args.Length() < 1)
-          return NanThrowError("One argument expected.");
-
-        v8::Handle<v8::Value> value = args[0];
+        Handle<Value> value = info[0];
         if (value->IsArray())
-          NanReturnValue(NanNew<v8::String>("array"));
+          RETURN(CHK(New("array")));
 #if (NODE_MODULE_VERSION > 0x000B)
         if (value->IsTypedArray())
-          NanReturnValue(NanNew<v8::String>("array"));
+          RETURN(CHK(New("array")));
 #endif
         if (value->IsDate())
-          NanReturnValue(NanNew<v8::String>("date"));
+          RETURN(CHK(New("date")));
 
         if (value->IsRegExp())
-          NanReturnValue(NanNew<v8::String>("regexp"));
+          RETURN(CHK(New("regexp")));
 
         if (value->IsNativeError())
-          NanReturnValue(NanNew<v8::String>("error"));
+          RETURN(CHK(New("error")));
 #if (NODE_MODULE_VERSION > 0x000E)
         if (value->IsArgumentsObject())
-          NanReturnValue(NanNew<v8::String>("array"));
+          RETURN(CHK(New("array")));
 
         if (value->IsMap() || value->IsWeakMap())
-          NanReturnValue(NanNew<v8::String>("map"));
+          RETURN(CHK(New("map")));
 
         if (value->IsSet() || value->IsWeakSet())
-          NanReturnValue(NanNew<v8::String>("set"));
+          RETURN(CHK(New("set")));
 
         if (value->IsMapIterator() || value->IsSetIterator())
-          NanReturnValue(NanNew<v8::String>("iterator"));
+          RETURN(CHK(New("iterator")));
 #endif
-        NanReturnUndefined();
+        RETURN(Undefined());
       };
 
-      static v8::Local<v8::String> functionDisplayName(v8::Handle<v8::Function> function) {
-        NanEscapableScope();
+      static Local<String> functionDisplayName(Handle<Function> function) {
+        EscapableHandleScope scope;
 
-        v8::Handle<v8::Value> value;
+        Local<String> value;
 #if (NODE_MODULE_VERSION > 0x000B)
-        value = function->GetDisplayName();
-        if (value->IsString() && value->ToString()->Length())
-          return NanEscapeScope(value->ToString());
+        value = CHK(To<String>(function->GetDisplayName()));
+        if (value->Length())
+          return scope.Escape(value);
+
+        value = CHK(To<String>(function->GetName()));
+        if (value->Length())
+          return scope.Escape(value);
+
+        value = CHK(To<String>(function->GetInferredName()));
+        if (value->Length())
+          return scope.Escape(value);
+#else
+        value = function->GetName()->ToString();
+        if (value->Length())
+          return scope.Escape(value);
+
+        value = function->GetInferredName()->ToString();
+        if (value->Length())
+          return scope.Escape(value);
 #endif
-        value = function->GetName();
-        if (value->IsString() && value->ToString()->Length())
-          return NanEscapeScope(value->ToString());
 
-        value = function->GetInferredName();
-        if (value->IsString() && value->ToString()->Length())
-          return NanEscapeScope(value->ToString());
-
-        return NanEscapeScope(NanNew<v8::String>(""));
+        return scope.Escape(EmptyString());
       };
 
       static NAN_METHOD(InternalConstructorName) {
-        NanScope();
+        if (info.Length() < 1)
+          return ThrowError("One argument expected.");
+        if (!info[0]->IsObject())
+          return ThrowTypeError("The argument must be an object.");
 
-        if (args.Length() < 1)
-          return NanThrowError("One argument expected.");
-        if (!args[0]->IsObject())
-          return NanThrowTypeError("The argument must be an object.");
+        Local<Object> object = CHK(To<Object>(info[0]));
+        Local<String> result = object->GetConstructorName();
 
-        v8::Local<v8::Object> object = args[0]->ToObject();
-        v8::Local<v8::String> result = object->GetConstructorName();
-
-        char* result_type;
+        const char* result_type;
         if (result.IsEmpty() || result->IsNull() || result->IsUndefined())
           result_type = "";
         else
-          result_type = *NanUtf8String(args[0]);
+          result_type = *Utf8String(info[0]);
 
         if (!result.IsEmpty() && strcmp(result_type, "Object") == 0) {
-          v8::Local<v8::String> constructorSymbol = NanNew<v8::String>("constructor");
+          Local<String> constructorSymbol = CHK(New("constructor"));
           if (object->HasRealNamedProperty(constructorSymbol) && !object->HasRealNamedCallbackProperty(constructorSymbol)) {
-            v8::TryCatch tryCatch;
-            v8::Local<v8::Value> constructor = object->GetRealNamedProperty(constructorSymbol);
+            TryCatch tryCatch;
+            Local<Value> constructor = object->GetRealNamedProperty(constructorSymbol);
             if (!constructor.IsEmpty() && constructor->IsFunction()) {
-              v8::Local<v8::String> constructorName = functionDisplayName(v8::Handle<v8::Function>::Cast(constructor));
+              Local<String> constructorName = functionDisplayName(Handle<Function>::Cast(constructor));
               if (!constructorName.IsEmpty() && !tryCatch.HasCaught())
                 result = constructorName;
             }
           }
           if (strcmp(result_type, "Object") == 0 && object->IsFunction())
-            result = NanNew<v8::String>("Function");
+            result = CHK(New("Function"));
         }
 
-        NanReturnValue(result);
+        RETURN(result);
       }
 
       static NAN_METHOD(FunctionDetailsWithoutScopes) {
-        NanScope();
+        if (info.Length() < 1)
+          return ThrowError("One argument expected.");
 
-        if (args.Length() < 1)
-          return NanThrowError("One argument expected.");
+        if (!info[0]->IsFunction())
+          return ThrowTypeError("The argument must be a function.");
 
-        if (!args[0]->IsFunction())
-          return NanThrowTypeError("The argument must be a function.");
+        Handle<Function> function = Handle<Function>::Cast(info[0]);
+        int32_t lineNumber = function->GetScriptLineNumber();
+        int32_t columnNumber = function->GetScriptColumnNumber();
 
-        v8::Handle<v8::Function> function = v8::Handle<v8::Function>::Cast(args[0]);
-        int lineNumber = function->GetScriptLineNumber();
-        int columnNumber = function->GetScriptColumnNumber();
-
-        v8::Local<v8::Object> location = NanNew<v8::Object>();
-        location->Set(NanNew<v8::String>("lineNumber"), NanNew<v8::Integer>(lineNumber));
-        location->Set(NanNew<v8::String>("columnNumber"), NanNew<v8::Integer>(columnNumber));
+        Local<Object> location = New<Object>();
+        SET(location, "lineNumber", New(lineNumber));
+        SET(location, "columnNumber", New(columnNumber));
 #if (NODE_MODULE_VERSION > 0x000B)
-        location->Set(NanNew<v8::String>("scriptId"),
-          NanNew<v8::Integer>(function->ScriptId())->ToString());
+        SET(location, "scriptId", CHK(To<String>(New(function->ScriptId()))));
 #else
-        location->Set(NanNew<v8::String>("scriptId"),
-          NanNew<v8::Integer>(function->GetScriptId()->ToInt32()->Value())->ToString());
+        SET(location, "scriptId", CHK(To<String>(New(function->GetScriptId()->ToInt32()->Value()))));
 #endif
-        v8::Local<v8::Object> result = NanNew<v8::Object>();
-        result->Set(NanNew<v8::String>("location"), location);
+        Local<Object> result = New<Object>();
+        SET(result, "location", location);
 
-        v8::Handle<v8::String> name = functionDisplayName(function);
-        result->Set(NanNew<v8::String>("functionName"), name.IsEmpty() ? NanNew<v8::String>("") : name);
+        Handle<String> name = functionDisplayName(function);
+        SET(result, "functionName", name.IsEmpty() ? EmptyString() : name);
 
-        NanReturnValue(result);
+        RETURN(result);
       }
 
       static NAN_METHOD(CallFunction) {
-        NanScope();
+        if (info.Length() < 2 || info.Length() > 3)
+          return ThrowError("Two or three arguments expected.");
+        if (!info[0]->IsFunction())
+          return ThrowTypeError("Argument 0 must be a function.");
 
-        if (args.Length() < 2 || args.Length() > 3)
-          return NanThrowError("Two or three arguments expected.");
-        if (!args[0]->IsFunction())
-          return NanThrowTypeError("Argument 0 must be a function.");
-
-        v8::Handle<v8::Function> function = v8::Handle<v8::Function>::Cast(args[0]);
+        Handle<Function> function = Handle<Function>::Cast(info[0]);
 #if (NODE_MODULE_VERSION > 0x000B)
-        v8::Handle<v8::Value> receiver = args[1];
+        Handle<Value> receiver = info[1];
 #else
-        v8::Handle<v8::Object> receiver = args[1]->ToObject();
+        Handle<Object> receiver = CHK(To<Object>(info[1]));
 #endif
 
-        if (args.Length() < 3 || args[2]->IsUndefined()) {
-          v8::Local<v8::Value> result = function->Call(receiver, 0, NULL);
-          NanReturnValue(result);
+        if (info.Length() < 3 || info[2]->IsUndefined()) {
+          Local<Value> result = function->Call(receiver, 0, NULL);
+          RETURN(result);
         }
 
-        if (!args[2]->IsArray())
-          return NanThrowTypeError("Argument 2 must be an array.");
+        if (!info[2]->IsArray())
+          return ThrowTypeError("Argument 2 must be an array.");
 
-        v8::Handle<v8::Array> arguments = v8::Handle<v8::Array>::Cast(args[2]);
+        Handle<Array> arguments = Handle<Array>::Cast(info[2]);
         int argc = arguments->Length();
-        v8::Handle<v8::Value> *argv = new v8::Handle<v8::Value>[argc];
+        Handle<Value> *argv = new Handle<Value>[argc];
         for (int i = 0; i < argc; ++i)
-            argv[i] = arguments->Get(i);
+          argv[i] = CHK(Get(arguments, i));
 
-        v8::Local<v8::Value> result = function->Call(receiver, argc, argv);
+        Local<Value> result = function->Call(receiver, argc, argv);
 
         delete [] argv;
-        NanReturnValue(result);
+        RETURN(result);
       };
 
       static NAN_METHOD(Eval) {
-        NanScope();
+        if (info.Length() < 1)
+          return ThrowError("One argument expected.");
 
-        if (args.Length() < 1)
-          return NanThrowError("One argument expected.");
-
-        v8::Local<v8::String> expression = args[0]->ToString();
+        Local<String> expression = info[0]->ToString();
         if (expression.IsEmpty())
-          return NanThrowTypeError("The argument must be a string.");
+          return ThrowTypeError("The argument must be a string.");
 
-        v8::TryCatch tryCatch;
-        v8::Handle<v8::Script> script = v8::Script::Compile(expression);
+        TryCatch tryCatch;
+        MaybeLocal<BoundScript> script = CompileScript(expression);
         if (tryCatch.HasCaught())
-          return NanThrowError(tryCatch.ReThrow());
+          return ThrowError(tryCatch.ReThrow());
 
-        v8::Handle<v8::Value> result = NanRunScript(script);
+        MaybeLocal<Value> result = Nan::RunScript(CHK(script));
         if (tryCatch.HasCaught())
-          return NanThrowError(tryCatch.ReThrow());
+          return ThrowError(tryCatch.ReThrow());
 
-        NanReturnValue(result);
+        RETURN(CHK(result));
       };
 
     private:
@@ -307,24 +341,23 @@ namespace nodex {
       ~Debug() {}
   };
 
-  void Initialize(v8::Handle<v8::Object> target) {
-    NanScope();
+  NAN_MODULE_INIT(Initialize) {
+    HandleScope scope;
 
-    NODE_SET_METHOD(target, "call", Debug::Call);
-    NODE_SET_METHOD(target, "sendCommand", Debug::SendCommand);
-    NODE_SET_METHOD(target, "runScript", Debug::RunScript);
-    NODE_SET_METHOD(target, "allowNatives", Debug::RunScript);
+    Local<Object> InjectedScriptHost = New<Object>();
+    SetMethod(InjectedScriptHost, "eval", Debug::Eval);
+    SetMethod(InjectedScriptHost, "evaluateWithExceptionDetails", Debug::EvaluateWithExceptionDetails);
+    SetMethod(InjectedScriptHost, "setNonEnumProperty", Debug::SetNonEnumProperty);
+    SetMethod(InjectedScriptHost, "subtype", Debug::Subtype);
+    SetMethod(InjectedScriptHost, "internalConstructorName", Debug::InternalConstructorName);
+    SetMethod(InjectedScriptHost, "functionDetailsWithoutScopes", Debug::FunctionDetailsWithoutScopes);
+    SetMethod(InjectedScriptHost, "callFunction", Debug::CallFunction);
 
-    v8::Local<v8::Object> InjectedScriptHost = NanNew<v8::Object>();
-    NODE_SET_METHOD(InjectedScriptHost, "eval", Debug::Eval);
-    NODE_SET_METHOD(InjectedScriptHost, "evaluateWithExceptionDetails", Debug::EvaluateWithExceptionDetails);
-    NODE_SET_METHOD(InjectedScriptHost, "setNonEnumProperty", Debug::SetNonEnumProperty);
-    NODE_SET_METHOD(InjectedScriptHost, "subtype", Debug::Subtype);
-    NODE_SET_METHOD(InjectedScriptHost, "internalConstructorName", Debug::InternalConstructorName);
-    NODE_SET_METHOD(InjectedScriptHost, "functionDetailsWithoutScopes", Debug::FunctionDetailsWithoutScopes);
-    NODE_SET_METHOD(InjectedScriptHost, "callFunction", Debug::CallFunction);
-
-    target->Set(NanNew<v8::String>("InjectedScriptHost"), InjectedScriptHost);
+    SetMethod(target, "call", Debug::Call);
+    SetMethod(target, "sendCommand", Debug::SendCommand);
+    SetMethod(target, "runScript", Debug::RunScript);
+    SetMethod(target, "allowNatives", Debug::AllowNatives);
+    SET(target, "InjectedScriptHost", InjectedScriptHost);
   }
 
   NODE_MODULE(debug, Initialize)
