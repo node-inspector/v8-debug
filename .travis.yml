@@ -1,10 +1,18 @@
+sudo: false
 language: cpp
-
 compiler: gcc
 
 os:
   - linux
   - osx
+
+addons:
+  apt:
+    sources:
+      - ubuntu-toolchain-r-test
+    packages:
+      - gcc-4.9
+      - g++-4.9
 
 env:
   matrix:
@@ -20,20 +28,15 @@ git:
   depth: 1
 
 before_install:
+  - if [ $TRAVIS_OS_NAME == "linux" ]; then
+      export CC=/usr/bin/gcc-4.9;
+      export CXX=/usr/bin/g++-4.9;
+    fi
+
   - rm -rf ~/.nvm/ && git clone --depth 1 "https://github.com/creationix/nvm.git" ~/.nvm
   - source ~/.nvm/nvm.sh
   - nvm install $NODE_VERSION
   - nvm use $NODE_VERSION
-
-  - if [ $TRAVIS_OS_NAME == "linux" ]; then
-      sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test;
-      sudo apt-get update;
-      sudo apt-get install gcc-4.9 g++-4.9;
-      sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.9 20;
-      sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-4.9 20;
-      sudo update-alternatives --config gcc;
-      sudo update-alternatives --config g++;
-    fi
 
   - export PATH="./node_modules/.bin/:$PATH"
 
