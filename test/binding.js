@@ -5,17 +5,31 @@ var binding_path = binary.find(path.resolve(path.join(__dirname,'../package.json
 
 
 describe('binding', function() {
-  var binding;
+  var binding = require(binding_path);
   it('source was builded and can be accessed from script', function() {
-    binding = require(binding_path);
     expect(binding).to.be.instanceof(Object);
   });
 
-  describe('InjectedScriptHost', function() {
-    var host;
-    before(function() {
-      host = binding.InjectedScriptHost;
+  describe('core', function() {
+    describe('function `call`', function() {
+      it('should rethrow ReferenceError', function() {
+        expect(binding.call.bind(null, function() {
+          "use strict";
+          if (error_here) return;
+        })).to.throw(ReferenceError);
+      });
+
+      it('should rethrow SyntaxError', function() {
+        expect(binding.call.bind(null, function() {
+          eval('[');
+        })).to.throw(SyntaxError);
+      });
     });
+  });
+
+  describe('InjectedScriptHost', function() {
+    var host = binding.InjectedScriptHost;
+
     describe('function `subtype`', function() {
       checksTypeValid(new Array(), 'array');
       checksTypeValid(new Date(), 'date');
@@ -115,7 +129,7 @@ describe('binding', function() {
       });
 
       it('should throw on wrong expression', function() {
-        expect(host.eval.bind(null, "[1")).to.throw();
+        expect(host.eval.bind(null, "[1")).to.throw(SyntaxError);
       });
     });
 
@@ -147,6 +161,13 @@ describe('binding', function() {
       it('should throw on wrong arguments', function() {
         expect(host.callFunction.bind(null, null, null, [1])).to.throw();
         expect(host.callFunction.bind(null, null, null, 1)).to.throw();
+      });
+
+      it('should rethrow ReferenceError', function() {
+        expect(host.callFunction.bind(null, function() {
+          'use strict';
+          if (error_here) return;
+        }, this)).to.throw(ReferenceError);
       });
     });
   });

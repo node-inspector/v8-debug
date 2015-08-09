@@ -12,6 +12,7 @@ using v8::String;
 using v8::Script;
 using v8::Object;
 using v8::Array;
+using v8::Message;
 using v8::Context;
 using v8::Function;
 using v8::FunctionTemplate;
@@ -46,7 +47,20 @@ namespace nodex {
 }
 
 #define SET(TARGET, NAME, VALUE)                                              \
-  Nan::Set(TARGET, CHK(Nan::New(NAME)), VALUE)
+  Set(TARGET, CHK(New(NAME)), VALUE)
+
+#define RUNSCRIPT(EXPRESSION, RESULT) while (true) {                          \
+    MaybeLocal<BoundScript> script = CompileScript(EXPRESSION);               \
+    if (tryCatch.HasCaught()) break;                                          \
+    RESULT = Nan::RunScript(CHK(script));                                     \
+    break;                                                                    \
+  }
+
+#define MAYBE_RETHROW()                                                       \
+  if (tryCatch.HasCaught()) {                                                 \
+    tryCatch.ReThrow();                                                       \
+    return;                                                                   \
+  }
 
   class Debug {
     public:
@@ -75,19 +89,18 @@ namespace nodex {
       };
 
       static NAN_METHOD(RunScript) {
-        Local<String> script_source = CHK(To<String>(info[0]));
+        Local<String> expression = CHK(To<String>(info[0]));
 
-        if (script_source.IsEmpty())
+        if (expression.IsEmpty())
           RETURN(Undefined());
 
         Context::Scope context_scope(v8::Debug::GetDebugContext());
 
-        Local<BoundScript> script = CHK(CompileScript(script_source));
-
-        if (script.IsEmpty())
-          RETURN(Undefined());
-
-        RETURN(CHK(Nan::RunScript(script)));
+        TryCatch tryCatch;
+        MaybeLocal<Value> result;
+        RUNSCRIPT(expression, result);
+        MAYBE_RETHROW();
+        RETURN(CHK(result));
       };
 
       static NAN_METHOD(AllowNatives) {
@@ -97,7 +110,7 @@ namespace nodex {
         RETURN(Undefined());
       }
 
-      static v8::Handle<v8::Object> createExceptionDetails(v8::Handle<v8::Message> message) {
+      static Handle<Object> createExceptionDetails(Handle<Message> message) {
         EscapableHandleScope scope;
 
         Local<Object> exceptionDetails = New<Object>();
@@ -124,20 +137,20 @@ namespace nodex {
         if (info.Length() < 1)
           return ThrowError("One argument expected.");
 
+        Local<Object> wrappedResult = New<Object>();
         Local<String> expression = CHK(To<String>(info[0]));
         if (expression.IsEmpty())
           return ThrowTypeError("The argument must be a string.");
 
         TryCatch tryCatch;
-        Local<BoundScript> script = CHK(CompileScript(expression));
-        Local<Value> result = CHK(Nan::RunScript(script));
+        MaybeLocal<Value> result;
+        RUNSCRIPT(expression, result);
 
-        Local<Object> wrappedResult = New<Object>();
         if (tryCatch.HasCaught()) {
           SET(wrappedResult, "result", tryCatch.Exception());
           SET(wrappedResult, "exceptionDetails", createExceptionDetails(tryCatch.Message()));
         } else {
-          SET(wrappedResult, "result", result);
+          SET(wrappedResult, "result", CHK(result));
           SET(wrappedResult, "exceptionDetails", Undefined());
         }
 
@@ -296,9 +309,13 @@ namespace nodex {
         Handle<Object> receiver = CHK(To<Object>(info[1]));
 #endif
 
+        TryCatch tryCatch;
+        MaybeLocal<Value> result;
+
         if (info.Length() < 3 || info[2]->IsUndefined()) {
-          Local<Value> result = function->Call(receiver, 0, NULL);
-          RETURN(result);
+          result = function->Call(receiver, 0, NULL);
+          MAYBE_RETHROW();
+          RETURN(CHK(result));
         }
 
         if (!info[2]->IsArray())
@@ -310,10 +327,11 @@ namespace nodex {
         for (int i = 0; i < argc; ++i)
           argv[i] = CHK(Get(arguments, i));
 
-        Local<Value> result = function->Call(receiver, argc, argv);
-
+        result = function->Call(receiver, argc, argv);
         delete [] argv;
-        RETURN(result);
+
+        MAYBE_RETHROW();
+        RETURN(CHK(result));
       };
 
       static NAN_METHOD(Eval) {
@@ -325,13 +343,9 @@ namespace nodex {
           return ThrowTypeError("The argument must be a string.");
 
         TryCatch tryCatch;
-        MaybeLocal<BoundScript> script = CompileScript(expression);
-        if (tryCatch.HasCaught())
-          return ThrowError(tryCatch.ReThrow());
-
-        MaybeLocal<Value> result = Nan::RunScript(CHK(script));
-        if (tryCatch.HasCaught())
-          return ThrowError(tryCatch.ReThrow());
+        MaybeLocal<Value> result;
+        RUNSCRIPT(expression, result);
+        MAYBE_RETHROW();
 
         RETURN(CHK(result));
       };
