@@ -94,12 +94,16 @@ namespace nodex {
         if (expression.IsEmpty())
           RETURN(Undefined());
 
+
         Local<Context> debug_context = v8::Debug::GetDebugContext();
+#if (NODE_MODULE_VERSION > 45)
         if (debug_context.IsEmpty()) {
           // Force-load the debug context.
           v8::Debug::GetMirror(info.GetIsolate()->GetCurrentContext(), info[0]);
           debug_context = v8::Debug::GetDebugContext();
         }
+#endif
+
         Context::Scope context_scope(debug_context);
 
         TryCatch tryCatch;
