@@ -94,7 +94,13 @@ namespace nodex {
         if (expression.IsEmpty())
           RETURN(Undefined());
 
-        Context::Scope context_scope(v8::Debug::GetDebugContext());
+        Local<Context> debug_context = v8::Debug::GetDebugContext();
+        if (debug_context.IsEmpty()) {
+          // Force-load the debug context.
+          v8::Debug::GetMirror(info.GetIsolate()->GetCurrentContext(), info[0]);
+          debug_context = v8::Debug::GetDebugContext();
+        }
+        Context::Scope context_scope(debug_context);
 
         TryCatch tryCatch;
         MaybeLocal<Value> result;
