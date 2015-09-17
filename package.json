@@ -8,10 +8,7 @@
     "type": "git",
     "url": "git://github.com/node-inspector/v8-debug.git"
   },
-  "license": {
-    "name": "BSD",
-    "url": "https://github.com/node-inspector/v8-debug/blob/master/LICENSE"
-  },
+  "license": "BSD-2-Clause",
   "binary": {
     "module_name": "debug",
     "module_path": "./build/{module_name}/v{version}/{node_abi}-{platform}-{arch}/",
