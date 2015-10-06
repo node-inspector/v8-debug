@@ -37,8 +37,9 @@
     "chai": "^1.10.0"
   },
   "scripts": {
-    "preinstall": " ",
+    "preinstall": "node -e 'process.exit(0)'",
     "install": "node-pre-gyp install --fallback-to-build",
+    "rebuild": "node-pre-gyp rebuild",
     "test": "mocha --debug"
   }
 }
