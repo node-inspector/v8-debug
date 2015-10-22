@@ -7,6 +7,8 @@ var EventEmitter = require('events').EventEmitter;
 var inherits = require('util').inherits;
 var extend = require('util')._extend;
 
+var NODE_NEXT = require('./tools/NODE_NEXT');
+
 // Don't cache debugger module
 delete require.cache[module.id];
 
@@ -214,6 +216,10 @@ V8Debug.prototype.getFromFrame = function(index, value) {
 };
 
 V8Debug.prototype.enableWebkitProtocol = function() {
+  if (!NODE_NEXT) {
+    throw new Error('WebKit protocol is not supported on target node version (' + process.version + ')');
+  }
+
   if (this._webkitProtocolEnabled) return;
 
   var DebuggerScriptSource,

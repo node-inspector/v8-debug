@@ -1,6 +1,8 @@
 var expect = require('chai').expect,
     v8debug = require('../');
 
+var NODE_NEXT = require('../tools/NODE_NEXT');
+
 var _debugger = require('child_process').spawn('node', ['./test/helpers/debugger.js']);
 
 _debugger.stderr.on('data', function(data) {
@@ -32,17 +34,23 @@ describe('v8-debug', function() {
       expect(v8debug.registerAgentCommand.bind(v8debug, 'command', [], function() {})).to.throw();
     });
 
-    it('enableWebkitProtocol should enable Webkit protocol', function() {
-      v8debug.enableWebkitProtocol();
-      expect(v8debug.enableWebkitProtocol.bind(v8debug)).to.not.throw();
-    });
+    if (NODE_NEXT) {
+      it('enableWebkitProtocol should enable Webkit protocol', function() {
+        v8debug.enableWebkitProtocol();
+        expect(v8debug.enableWebkitProtocol.bind(v8debug)).to.not.throw();
+      });
 
-    it('if enabled registerAgentCommand should register command', function(done) {
-      expect(v8debug.registerAgentCommand.bind(v8debug, 'command', [], function() {
-        done();
-      })).to.not.throw();
-      v8debug.sendCommand('command');
-    });
+      it('if enabled registerAgentCommand should register command', function(done) {
+        expect(v8debug.registerAgentCommand.bind(v8debug, 'command', [], function() {
+          done();
+        })).to.not.throw();
+        v8debug.sendCommand('command');
+      });
+    } else {
+      it('enableWebkitProtocol should throw error', function() {
+        expect(v8debug.enableWebkitProtocol).to.throw();
+      });
+    }
   });
 
   describe('events.', function() {

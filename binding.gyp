@@ -1,6 +1,6 @@
 {
   'variables': {
-    'node_next': '<!(node -e "console.log(process.versions.modules > 45)")'
+    'node_next': '<!(node -p -e "require(\'./tools/NODE_NEXT.js\')")'
   },
   'targets': [
     {
@@ -17,7 +17,7 @@
             'sources': [
                 'src/InjectedScriptHost.cc'
             ],
-            'defines': ['NODE_NEXT=true']
+            'defines': ['NODE_NEXT=1']
         }]
       ]
     },

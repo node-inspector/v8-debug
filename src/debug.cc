@@ -1,5 +1,5 @@
-#include <nan.h>
 #include <v8-debug.h>
+#include <nan.h>
 
 #include "tools.h"
 #if (NODE_NEXT)
