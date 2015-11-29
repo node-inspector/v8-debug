@@ -18,8 +18,8 @@ env:
   matrix:
     - export NODE_VERSION="0.10"
     - export NODE_VERSION="0.12"
-    - export NODE_VERSION="iojs-3"
     - export NODE_VERSION="4"
+    - export NODE_VERSION="5"
   global:
     - node_pre_gyp_region="eu-central-1"
 
