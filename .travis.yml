@@ -40,7 +40,7 @@ before_install:
   - export PATH="./node_modules/.bin/:$PATH"
 
   - PUBLISH_BINARY=false
-  - if [[ $TRAVIS_BRANCH == `git describe --tags --always HEAD` ]]; then PUBLISH_BINARY=true; fi;
+  - if [[ $TRAVIS_TAG ]]; then PUBLISH_BINARY=true; fi;
 
   - platform=$(uname -s | sed "y/ABCDEFGHIJKLMNOPQRSTUVWXYZ/abcdefghijklmnopqrstuvwxyz/")
 
