@@ -1,4 +1,5 @@
 *.log
+build/!(debug)
 node_modules
 test
 v8-debug-*.tgz

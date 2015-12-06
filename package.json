@@ -38,6 +38,7 @@
   },
   "scripts": {
     "preinstall": "node -e 'process.exit(0)'",
+    "prepublish": "node ./tools/prepublish.js",
     "install": "node-pre-gyp install --fallback-to-build",
     "rebuild": "node-pre-gyp rebuild",
     "test": "mocha --debug"
