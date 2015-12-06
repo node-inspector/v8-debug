@@ -34,7 +34,8 @@
   "devDependencies": {
     "aws-sdk": "^2.1.8",
     "mocha": "^2.1.0",
-    "chai": "^1.10.0"
+    "chai": "^1.10.0",
+    "rimraf": "^2.4.4"
   },
   "scripts": {
     "preinstall": "node -e 'process.exit(0)'",

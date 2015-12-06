@@ -1,7 +1,10 @@
 if (process.env.CI) process.exit(0);
 
+var rimraf = require('rimraf');
 var extend = require('util')._extend;
 var gyp = require('node-pre-gyp');
+
+rimraf.sync('./build');
 
 var versions = ['0.10.0', '0.12.0', '4.0.0', '5.0.0'];
 var matrix = {
