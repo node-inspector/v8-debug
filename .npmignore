@@ -1,0 +1,9 @@
+*.log
+node_modules
+test
+v8-debug-*.tgz
+.gitattributes
+.gitignore
+.npmignore
+.travis.yml
+appveyor.yml
