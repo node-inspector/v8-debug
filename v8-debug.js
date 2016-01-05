@@ -163,12 +163,14 @@ V8Debug.prototype._unwrapDebugCommandProcessor = function() {
 
 V8Debug.prototype.register =
 V8Debug.prototype.registerCommand = function(name, func) {
-  overrides.extendedProcessDebugJSONRequestHandles_[name] = func;
+  var proto = this.get('DebugCommandProcessor.prototype');
+  proto.extendedProcessDebugJSONRequestHandles_[name] = func;
 };
 
 V8Debug.prototype.registerAsync =
 V8Debug.prototype.registerAsyncCommand = function(name, func) {
-  overrides.extendedProcessDebugJSONRequestAsyncHandles_[name] = func;
+  var proto = this.get('DebugCommandProcessor.prototype');
+  proto.extendedProcessDebugJSONRequestAsyncHandles_[name] = func;
 };
 
 V8Debug.prototype.command =
@@ -193,14 +195,13 @@ V8Debug.prototype.commandToEvent = function(request, response) {
 };
 
 V8Debug.prototype.registerEvent = function(name) {
-  overrides.extendedProcessDebugJSONRequestHandles_[name] = this.commandToEvent;
+  var proto = this.get('DebugCommandProcessor.prototype');
+  proto.extendedProcessDebugJSONRequestHandles_[name] = this.commandToEvent;
 };
 
 V8Debug.prototype.get =
 V8Debug.prototype.runInDebugContext = function(script) {
-  if (typeof script == 'function') script = script.toString() + '()';
-
-  script = /\);$/.test(script) ? script : '(' + script + ');';
+  if (typeof script == 'function') script = '(' + script.toString() + ')()';
 
   return binding.runScript(script);
 };
@@ -242,25 +243,25 @@ V8Debug.prototype.enableWebkitProtocol = function() {
       InjectedScriptHostSource,
       InjectedScriptHost;
 
-  function prepareSource(source) {
-    return 'var ToggleMirrorCache = ToggleMirrorCache || function() {};\n' +
-    '(function() {' +
-      ('' + source).replace(/^.*?"use strict";(\r?\n.*?)*\(/m, '\r\n"use strict";\nreturn (') +
-    '}());';
-  }
+  this.runInDebugContext('ToggleMirrorCache = ToggleMirrorCache || function() {}');
 
-  DebuggerScriptSource = prepareSource(fs.readFileSync(DebuggerScriptLink, 'utf8'));
+  DebuggerScriptSource = fs.readFileSync(DebuggerScriptLink, 'utf8');
   DebuggerScript = this.runInDebugContext(DebuggerScriptSource);
 
-  InjectedScriptSource = prepareSource(fs.readFileSync(InjectedScriptLink, 'utf8'));
+  InjectedScriptSource = fs.readFileSync(InjectedScriptLink, 'utf8');
   InjectedScript = this.runInDebugContext(InjectedScriptSource);
 
-  InjectedScriptHostSource = prepareSource(fs.readFileSync(InjectedScriptHostLink, 'utf8'));
+  InjectedScriptHostSource = fs.readFileSync(InjectedScriptHostLink, 'utf8');
   InjectedScriptHost = this.runInDebugContext(InjectedScriptHostSource)(binding, DebuggerScript);
 
   var injectedScript = InjectedScript(InjectedScriptHost, global, 1);
 
   this.registerAgentCommand = function(command, parameters, callback) {
+    if (typeof parameters === 'function') {
+      callback = parameters;
+      parameters = [];
+    }
+
     this.registerCommand(command, new WebkitProtocolCallback(parameters, callback));
   };
 
