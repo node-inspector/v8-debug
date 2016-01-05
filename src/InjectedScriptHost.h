@@ -15,20 +15,11 @@ namespace nodex {
      static NAN_METHOD(InternalConstructorName);
      static NAN_METHOD(FunctionDetailsWithoutScopes);
      static NAN_METHOD(CallFunction);
-    /*
-    static v8::Local<v8::Value> New(const v8::CpuProfile* node);
-    static Nan::Persistent<v8::Array> profiles;
-    */
+     static NAN_METHOD(GetInternalProperties);
    private:
-     static v8::Handle<v8::Object> createExceptionDetails(v8::Handle<v8::Message> message);
-     static v8::Local<v8::String> functionDisplayName(v8::Handle<v8::Function> function);
-
-    /*
-    static NAN_METHOD(Delete);
-    static void Initialize();
-    static Nan::Persistent<v8::ObjectTemplate> profile_template_;
-    static uint32_t uid_counter;
-    */
+     static v8::Local<v8::Object> createExceptionDetails(v8::Local<v8::Message> message);
+     static v8::Local<v8::String> functionDisplayName(v8::Local<v8::Function> function);
+     static const char* toCoreStringWithUndefinedOrNullCheck(v8::Local<v8::String> result);
   };
 
 } //namespace nodex
