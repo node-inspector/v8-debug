@@ -107,10 +107,14 @@ function V8Debug() {
   // After node 0.12.0 this function serves to allocate Debug Context
   // like a persistent value, that saves all our changes.
   this._setDebugEventListener();
+  // We need to share security token between current and debug context to
+  // get access to evaluation functions
+  this._shareSecurityToken();
   this._wrapDebugCommandProcessor();
 
   this.once('close', function() {
     this._unwrapDebugCommandProcessor();
+    this._unshareSecurityToken();
     this._unsetDebugEventListener();
     process.nextTick(function() {
       this.removeAllListeners();
@@ -128,6 +132,14 @@ V8Debug.prototype._setDebugEventListener = function() {
 V8Debug.prototype._unsetDebugEventListener = function() {
   var Debug = this.get('Debug');
   Debug.setListener(null);
+};
+
+V8Debug.prototype._shareSecurityToken = function() {
+  binding.shareSecurityToken();
+};
+
+V8Debug.prototype._unshareSecurityToken = function() {
+  binding.unshareSecurityToken();
 };
 
 V8Debug.prototype._wrapDebugCommandProcessor = function() {
