@@ -58,15 +58,18 @@ namespace nodex {
         if (expression.IsEmpty())
           RETURN(Undefined());
 
+        Local<Context> current_context = Isolate::GetCurrent()->GetCurrentContext();
         Local<Context> debug_context = v8::Debug::GetDebugContext();
 #if (NODE_MODULE_VERSION > 45)
         if (debug_context.IsEmpty()) {
           // Force-load the debug context.
-          v8::Debug::GetMirror(info.GetIsolate()->GetCurrentContext(), info[0]);
+          v8::Debug::GetMirror(current_context, New<Object>());
           debug_context = v8::Debug::GetDebugContext();
         }
-#endif
 
+        // Share security token
+        debug_context->SetSecurityToken(current_context->GetSecurityToken());
+#endif
         Context::Scope context_scope(debug_context);
 
         TryCatch tryCatch;
@@ -77,12 +80,39 @@ namespace nodex {
       };
 
       static NAN_METHOD(AllowNatives) {
+        // TODO: deprecate this useless method
         const char allow_natives_syntax[] = "--allow_natives_syntax";
         v8::V8::SetFlagsFromString(allow_natives_syntax, sizeof(allow_natives_syntax) - 1);
 
         RETURN(Undefined());
       }
 
+      static NAN_METHOD(ShareSecurityToken) {
+        Local<Context> current_context = info.GetIsolate()->GetCurrentContext();
+        Local<Context> debug_context = v8::Debug::GetDebugContext();
+#if (NODE_MODULE_VERSION > 45)
+        if (debug_context.IsEmpty()) {
+          // Force-load the debug context.
+          v8::Debug::GetMirror(current_context, New<Object>());
+          debug_context = v8::Debug::GetDebugContext();
+        }
+#endif
+        // Share security token
+        debug_context->SetSecurityToken(current_context->GetSecurityToken());
+      }
+
+      static NAN_METHOD(UnshareSecurityToken) {
+        Local<Context> current_context = info.GetIsolate()->GetCurrentContext();
+        Local<Context> debug_context = v8::Debug::GetDebugContext();
+#if (NODE_MODULE_VERSION > 45)
+        if (debug_context.IsEmpty()) {
+          // Force-load the debug context.
+          v8::Debug::GetMirror(current_context, New<Object>());
+          debug_context = v8::Debug::GetDebugContext();
+        }
+#endif
+        debug_context->UseDefaultSecurityToken();
+      }
     private:
       Debug() {}
       ~Debug() {}
@@ -97,6 +127,8 @@ namespace nodex {
     SetMethod(target, "sendCommand", Debug::SendCommand);
     SetMethod(target, "runScript", Debug::RunScript);
     SetMethod(target, "allowNatives", Debug::AllowNatives);
+    SetMethod(target, "shareSecurityToken", Debug::ShareSecurityToken);
+    SetMethod(target, "unshareSecurityToken", Debug::UnshareSecurityToken);
   }
 
   NODE_MODULE(debug, Initialize)
