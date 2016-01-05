@@ -4,7 +4,6 @@
 #include "tools.h"
 
 using v8::Isolate;
-using v8::Handle;
 using v8::Local;
 using v8::Value;
 using v8::Boolean;
@@ -31,7 +30,7 @@ using Nan::EmptyString;
 using Nan::Utf8String;
 
 namespace nodex {
-  void InjectedScriptHost::Initialize(Handle<Object> target) {
+  void InjectedScriptHost::Initialize(Local<Object> target) {
     Local<Object> injectedScriptHost = New<Object>();
     SetMethod(injectedScriptHost, "eval", Eval);
     SetMethod(injectedScriptHost, "evaluateWithExceptionDetails", EvaluateWithExceptionDetails);
@@ -40,11 +39,12 @@ namespace nodex {
     SetMethod(injectedScriptHost, "internalConstructorName", InternalConstructorName);
     SetMethod(injectedScriptHost, "functionDetailsWithoutScopes", FunctionDetailsWithoutScopes);
     SetMethod(injectedScriptHost, "callFunction", CallFunction);
+    SetMethod(injectedScriptHost, "getInternalProperties", GetInternalProperties);
 
     SET(target, "InjectedScriptHost", injectedScriptHost);
   }
 
-  Handle<Object> InjectedScriptHost::createExceptionDetails(Handle<Message> message) {
+  Local<Object> InjectedScriptHost::createExceptionDetails(Local<Message> message) {
     EscapableHandleScope scope;
 
     Local<Object> exceptionDetails = New<Object>();
@@ -133,51 +133,48 @@ namespace nodex {
     RETURN(Undefined());
   };
 
-  Local<String> InjectedScriptHost::functionDisplayName(Handle<Function> function) {
-    EscapableHandleScope scope;
+  const char* InjectedScriptHost::toCoreStringWithUndefinedOrNullCheck(Local<String> result) {
+    if (result.IsEmpty() || result->IsNull() || result->IsUndefined())
+      return "";
+    else
+      return *Utf8String(result);
+  };
 
-    Local<String> value = CHK(To<String>(function->GetDisplayName()));
-    if (value->Length())
-      return scope.Escape(value);
+  Local<String> InjectedScriptHost::functionDisplayName(Local<Function> function) {
+    Local<Value> value = function->GetDisplayName();
+    if (value->IsString() && Local<v8::String>::Cast(value)->Length())
+        return Local<String>::Cast(value);
 
-    value = CHK(To<String>(function->GetName()));
-    if (value->Length())
-      return scope.Escape(value);
+    value = function->GetName();
+    if (value->IsString() && v8::Local<v8::String>::Cast(value)->Length())
+        return v8::Local<v8::String>::Cast(value);
 
-    value = CHK(To<String>(function->GetInferredName()));
-    if (value->Length())
-      return scope.Escape(value);
+    value = function->GetInferredName();
+    if (value->IsString() && v8::Local<v8::String>::Cast(value)->Length())
+        return v8::Local<v8::String>::Cast(value);
 
-    return scope.Escape(EmptyString());
+    return v8::Local<v8::String>();
   };
 
   NAN_METHOD(InjectedScriptHost::InternalConstructorName) {
-    if (info.Length() < 1)
-      return ThrowError("One argument expected.");
-    if (!info[0]->IsObject())
-      return ThrowTypeError("The argument must be an object.");
+    if (info.Length() < 1 || !info[0]->IsObject())
+      return;
 
     Local<Object> object = CHK(To<Object>(info[0]));
     Local<String> result = object->GetConstructorName();
 
-    const char* result_type;
-    if (result.IsEmpty() || result->IsNull() || result->IsUndefined())
-      result_type = "";
-    else
-      result_type = *Utf8String(info[0]);
-
-    if (!result.IsEmpty() && strcmp(result_type, "Object") == 0) {
+    if (!result.IsEmpty() && strcmp(toCoreStringWithUndefinedOrNullCheck(result), "Object") == 0) {
       Local<String> constructorSymbol = CHK(New("constructor"));
       if (object->HasRealNamedProperty(constructorSymbol) && !object->HasRealNamedCallbackProperty(constructorSymbol)) {
         TryCatch tryCatch;
         Local<Value> constructor = object->GetRealNamedProperty(constructorSymbol);
         if (!constructor.IsEmpty() && constructor->IsFunction()) {
-          Local<String> constructorName = functionDisplayName(Handle<Function>::Cast(constructor));
+          Local<String> constructorName = functionDisplayName(Local<Function>::Cast(constructor));
           if (!constructorName.IsEmpty() && !tryCatch.HasCaught())
             result = constructorName;
         }
       }
-      if (strcmp(result_type, "Object") == 0 && object->IsFunction())
+      if (strcmp(toCoreStringWithUndefinedOrNullCheck(result), "Object") == 0 && object->IsFunction())
         result = CHK(New("Function"));
     }
 
@@ -203,7 +200,7 @@ namespace nodex {
     Local<Object> result = New<Object>();
     SET(result, "location", location);
 
-    Handle<String> name = functionDisplayName(function);
+    Local<String> name = functionDisplayName(function);
     SET(result, "functionName", name.IsEmpty() ? EmptyString() : name);
 
     SET(result, "isGenerator", New<Boolean>(function->IsGeneratorFunction()));
@@ -217,8 +214,8 @@ namespace nodex {
     if (!info[0]->IsFunction())
       return ThrowTypeError("Argument 0 must be a function.");
 
-    Handle<Function> function = Handle<Function>::Cast(info[0]);
-    Handle<Value> receiver = info[1];
+    Local<Function> function = Local<Function>::Cast(info[0]);
+    Local<Value> receiver = info[1];
 
     TryCatch tryCatch;
     MaybeLocal<Value> result;
@@ -232,9 +229,9 @@ namespace nodex {
     if (!info[2]->IsArray())
       return ThrowTypeError("Argument 2 must be an array.");
 
-    Handle<Array> arguments = Handle<Array>::Cast(info[2]);
+    Local<Array> arguments = Local<Array>::Cast(info[2]);
     int argc = arguments->Length();
-    Handle<Value> *argv = new Handle<Value>[argc];
+    Local<Value> *argv = new Local<Value>[argc];
     for (int i = 0; i < argc; ++i)
       argv[i] = CHK(Get(arguments, i));
 
@@ -260,4 +257,13 @@ namespace nodex {
 
     RETURN(CHK(result));
   };
+
+  NAN_METHOD(InjectedScriptHost::GetInternalProperties) {
+    if (info.Length() < 1 || !info[0]->IsObject())
+        return;
+
+    MaybeLocal<Array> result = v8::Debug::GetInternalProperties(info.GetIsolate(), info[0]);
+
+    RETURN(CHK(result));
+  }
 }
