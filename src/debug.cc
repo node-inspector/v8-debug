@@ -4,6 +4,7 @@
 #include "tools.h"
 #if (NODE_NEXT)
 #include "InjectedScriptHost.h"
+#include "JavaScriptCallFrame.h"
 #endif
 
 using v8::Isolate;
@@ -121,6 +122,7 @@ namespace nodex {
   NAN_MODULE_INIT(Initialize) {
 #if (NODE_NEXT)
     InjectedScriptHost::Initialize(target);
+    JavaScriptCallFrame::Initialize(target);
 #endif
 
     SetMethod(target, "call", Debug::Call);

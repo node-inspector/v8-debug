@@ -14,14 +14,14 @@
 
 #define RUNSCRIPT(EXPRESSION, RESULT) while (true) {                          \
     Nan::MaybeLocal<Nan::BoundScript> script = Nan::CompileScript(EXPRESSION);\
-    if (tryCatch.HasCaught()) break;                                     \
+    if (tryCatch.HasCaught()) break;                                          \
     RESULT = Nan::RunScript(CHK(script));                                     \
     break;                                                                    \
   }
 
 #define MAYBE_RETHROW()                                                       \
-  if (tryCatch.HasCaught()) {                                            \
-    tryCatch.ReThrow();                                                  \
+  if (tryCatch.HasCaught()) {                                                 \
+    tryCatch.ReThrow();                                                       \
     return;                                                                   \
   }
 
