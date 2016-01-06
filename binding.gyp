@@ -15,7 +15,8 @@
       'conditions' : [
         ['node_next=="true"', {
             'sources': [
-                'src/InjectedScriptHost.cc'
+                'src/InjectedScriptHost.cc',
+                'src/JavaScriptCallFrame.cc'
             ],
             'defines': ['NODE_NEXT=1']
         }]

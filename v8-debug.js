@@ -18,6 +18,7 @@ function InjectedScriptDir(link) {
 var DebuggerScriptLink = InjectedScriptDir('DebuggerScript.js');
 var InjectedScriptLink = InjectedScriptDir('InjectedScriptSource.js');
 var InjectedScriptHostLink = InjectedScriptDir('InjectedScriptHost.js');
+var JavaScriptCallFrameLink = InjectedScriptDir('JavaScriptCallFrame.js');
 
 var overrides = {
   extendedProcessDebugJSONRequestHandles_: {},
@@ -254,6 +255,9 @@ V8Debug.prototype.enableWebkitProtocol = function() {
   InjectedScriptHostSource = fs.readFileSync(InjectedScriptHostLink, 'utf8');
   InjectedScriptHost = this.runInDebugContext(InjectedScriptHostSource)(binding, DebuggerScript);
 
+  JavaScriptCallFrameSource = fs.readFileSync(JavaScriptCallFrameLink, 'utf8');
+  JavaScriptCallFrame = this.runInDebugContext(JavaScriptCallFrameSource)(binding, DebuggerScript);
+
   var injectedScript = InjectedScript(InjectedScriptHost, global, 1);
 
   this.registerAgentCommand = function(command, parameters, callback) {
@@ -263,6 +267,15 @@ V8Debug.prototype.enableWebkitProtocol = function() {
     }
 
     this.registerCommand(command, new WebkitProtocolCallback(parameters, callback));
+  };
+
+  this.wrapCallFrames = function(execState, maximumLimit, scopeDetails) {
+    var scopeBits = 2;
+
+    if (maximumLimit < 0) throw new Error('Incorrect stack trace limit.');
+    var data = (maximumLimit << scopeBits) | scopeDetails;
+
+    return JavaScriptCallFrame.currentCallFrame(execState, data);;
   };
 
   this._webkitProtocolEnabled = true;
@@ -282,6 +295,7 @@ V8Debug.prototype.enableWebkitProtocol = function() {
   }
 };
 
+V8Debug.prototype.wrapCallFrames =
 V8Debug.prototype.registerAgentCommand = function(command, parameters, callback) {
   throw new Error('Use "enableWebkitProtocol" before using this method');
 };
