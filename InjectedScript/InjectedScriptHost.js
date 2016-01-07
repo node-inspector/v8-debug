@@ -18,8 +18,8 @@
     var id = lastBoundObjectId++;
     idToWrappedObject.set(id, value);
 
-    if (!groupName) return;
     if (id < 0) return;
+    if (groupName == null) return id;
 
     idToObjectGroupName.set(id, groupName);
 
@@ -29,6 +29,33 @@
       nameToObjectGroup.get(groupName).push(id);
 
     return id;
+  };
+
+  InjectedScriptHost.prototype.unbind = function(id) {
+    idToWrappedObject.delete(id);
+    idToObjectGroupName.delete(id);
+  };
+
+  InjectedScriptHost.prototype.releaseObject = function(objectId) {
+    var parsedObjectId;
+    try {
+      parsedObjectId = JSON.parse(objectId);
+    } catch (e) { return; }
+
+    this.unbind(parsedObjectId.id);
+  };
+
+  InjectedScriptHost.prototype.releaseObjectGroup = function(groupName) {
+    if (!groupName) return;
+
+    var group = nameToObjectGroup.get(groupName);
+    if (!group) return;
+
+    group.forEach(function(id) {
+      this.unbind(id);
+    }, this);
+
+    nameToObjectGroup.delete(groupName);
   };
 
   InjectedScriptHost.prototype.objectForId = function(id) {

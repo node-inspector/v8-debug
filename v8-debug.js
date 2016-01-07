@@ -182,7 +182,7 @@ function sendCommand(name, attributes, userdata) {
     seq: 0,
     type: 'request',
     command: name,
-    arguments: attributes || {}
+    arguments: attributes
   };
   binding.sendCommand(JSON.stringify(message));
 };
@@ -256,9 +256,9 @@ V8Debug.prototype.enableWebkitProtocol = function() {
   InjectedScriptHost = this.runInDebugContext(InjectedScriptHostSource)(binding, DebuggerScript);
 
   JavaScriptCallFrameSource = fs.readFileSync(JavaScriptCallFrameLink, 'utf8');
-  JavaScriptCallFrame = this.runInDebugContext(JavaScriptCallFrameSource)(binding, DebuggerScript);
+  JavaScriptCallFrame = this.runInDebugContext(JavaScriptCallFrameSource)(binding);
 
-  var injectedScript = InjectedScript(InjectedScriptHost, global, 1);
+  var injectedScript = InjectedScript(InjectedScriptHost, global, process.pid);
 
   this.registerAgentCommand = function(command, parameters, callback) {
     if (typeof parameters === 'function') {
@@ -274,8 +274,16 @@ V8Debug.prototype.enableWebkitProtocol = function() {
 
     if (maximumLimit < 0) throw new Error('Incorrect stack trace limit.');
     var data = (maximumLimit << scopeBits) | scopeDetails;
+    var currentCallFrame = DebuggerScript.currentCallFrame(execState, data);
+    return new JavaScriptCallFrame(currentCallFrame);
+  };
 
-    return JavaScriptCallFrame.currentCallFrame(execState, data);;
+  this.releaseObject = function(name) {
+    return InjectedScriptHost.releaseObject(name);
+  };
+
+  this.releaseObjectGroup = function(name) {
+    return InjectedScriptHost.releaseObjectGroup(name);
   };
 
   this._webkitProtocolEnabled = true;
@@ -295,6 +303,8 @@ V8Debug.prototype.enableWebkitProtocol = function() {
   }
 };
 
+V8Debug.prototype.releaseObject =
+V8Debug.prototype.releaseObjectGroup =
 V8Debug.prototype.wrapCallFrames =
 V8Debug.prototype.registerAgentCommand = function(command, parameters, callback) {
   throw new Error('Use "enableWebkitProtocol" before using this method');
