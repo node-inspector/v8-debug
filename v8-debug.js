@@ -145,6 +145,7 @@ V8Debug.prototype._unshareSecurityToken = function() {
 
 V8Debug.prototype._wrapDebugCommandProcessor = function() {
   var proto = this.get('DebugCommandProcessor.prototype');
+  this._DebugCommandProcessor = proto;
   overrides.processDebugRequest_ = proto.processDebugRequest;
   extend(proto, overrides);
   overrides.extendedProcessDebugJSONRequestHandles_['disconnect'] = function(request, response) {
@@ -154,23 +155,30 @@ V8Debug.prototype._wrapDebugCommandProcessor = function() {
 };
 
 V8Debug.prototype._unwrapDebugCommandProcessor = function() {
-  var proto = this.get('DebugCommandProcessor.prototype');
+  var proto = this._DebugCommandProcessor;
   proto.processDebugRequest = proto.processDebugRequest_;
   delete proto.processDebugRequest_;
   delete proto.extendedProcessDebugJSONRequest_;
   delete proto.extendedProcessDebugJSONRequestHandles_;
   delete proto.extendedProcessDebugJSONRequestAsyncHandles_;
+  delete this._DebugCommandProcessor;
 };
 
 V8Debug.prototype.register =
 V8Debug.prototype.registerCommand = function(name, func) {
-  var proto = this.get('DebugCommandProcessor.prototype');
+  var proto = this._DebugCommandProcessor;
   proto.extendedProcessDebugJSONRequestHandles_[name] = func;
+};
+
+V8Debug.prototype.unregister =
+V8Debug.prototype.unregisterCommand = function(name, func) {
+  var proto = this._DebugCommandProcessor;
+  delete proto.extendedProcessDebugJSONRequestHandles_[name];
 };
 
 V8Debug.prototype.registerAsync =
 V8Debug.prototype.registerAsyncCommand = function(name, func) {
-  var proto = this.get('DebugCommandProcessor.prototype');
+  var proto = this._DebugCommandProcessor;
   proto.extendedProcessDebugJSONRequestAsyncHandles_[name] = func;
 };
 
@@ -196,7 +204,7 @@ V8Debug.prototype.commandToEvent = function(request, response) {
 };
 
 V8Debug.prototype.registerEvent = function(name) {
-  var proto = this.get('DebugCommandProcessor.prototype');
+  var proto = this._DebugCommandProcessor;
   proto.extendedProcessDebugJSONRequestHandles_[name] = this.commandToEvent;
 };
 
@@ -237,6 +245,8 @@ V8Debug.prototype.enableWebkitProtocol = function() {
 
   if (this._webkitProtocolEnabled) return;
 
+  var nextTmpEventId = 1;
+
   var DebuggerScriptSource,
       DebuggerScript,
       InjectedScriptSource,
@@ -266,7 +276,19 @@ V8Debug.prototype.enableWebkitProtocol = function() {
       parameters = [];
     }
 
-    this.registerCommand(command, new WebkitProtocolCallback(parameters, callback));
+    this.registerCommand(command, new WebkitCommandCallback(parameters, callback));
+  };
+
+  this.emitAgentEvent = function(command, callback) {
+    var handlerName = 'tmpEvent-' + nextTmpEventId++;
+    this.registerCommand(handlerName, function(request, response) {
+      this.commandToEvent(request, response);
+      response.event = command;
+
+      new WebkitEventCallback(callback)(request, response);
+    }.bind(this));
+    this.sendCommand(handlerName);
+    this.unregisterCommand(handlerName);
   };
 
   this.wrapCallFrames = function(execState, maximumLimit, scopeDetails) {
@@ -288,7 +310,7 @@ V8Debug.prototype.enableWebkitProtocol = function() {
 
   this._webkitProtocolEnabled = true;
 
-  function WebkitProtocolCallback(argsList, callback) {
+  function WebkitCommandCallback(argsList, callback) {
     return function(request, response) {
       InjectedScriptHost.execState = this.exec_state_;
 
@@ -297,6 +319,16 @@ V8Debug.prototype.enableWebkitProtocol = function() {
       });
 
       callback.call(this, args, response, injectedScript, DebuggerScript);
+
+      InjectedScriptHost.execState = null;
+    }
+  }
+
+  function WebkitEventCallback(callback) {
+    return function(request, response) {
+      InjectedScriptHost.execState = this.exec_state_;
+
+      callback.call(this, response, injectedScript, DebuggerScript);
 
       InjectedScriptHost.execState = null;
     }
