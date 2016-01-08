@@ -21,6 +21,7 @@ describe('binding', function() {
       checksTypeValid(new RegExp(), 'regexp');
       checksTypeValid(new Error(), 'error');
       checksTypeValid(new String(), undefined);
+      checksTypeValid(new Promise(function() {}), undefined);
 
       function checksTypeValid(value, type) {
         it('checks ' + type + ' subtype', function() {
@@ -65,16 +66,15 @@ describe('binding', function() {
     describe('function `internalConstructorName`', function() {
       checksNameValid(new Number(), 'Number');
       checksNameValid(new Object(), 'Object');
+      checksNameValid(new Promise(function() {}), 'Promise');
+      checksNameValid(1, undefined);
+      checksNameValid(null, undefined);
 
       function checksNameValid(value, name) {
         it('checks new ' + name + '() constructor name', function() {
           expect(host.internalConstructorName(value)).to.equal(name);
         });
       }
-
-      throwsOnArgs([]);
-      throwsOnArgs([1]);
-      throwsOnArgs([null]);
 
       function throwsOnArgs(argvList) {
         it('should throw on wrong arguments ' + JSON.stringify(argvList), function() {

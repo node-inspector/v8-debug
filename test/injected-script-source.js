@@ -4,7 +4,7 @@ var NODE_NEXT = require('../tools/NODE_NEXT.js');
 
 if (!NODE_NEXT) return;
 
-describe.only('InjectedScriptSource', function() {
+describe('InjectedScriptSource', function() {
   before(function() {
       debug.enableWebkitProtocol();
   });
