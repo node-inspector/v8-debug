@@ -69,7 +69,7 @@ var overrides = {
           response = this.createResponse();
         }
         response.success = false;
-        response.message = e.toString();
+        response.message = e.stack;
       }
 
       // Return the response as a JSON encoded string.
@@ -86,11 +86,11 @@ var overrides = {
                 '"request_seq":' + request.seq + ',' +
                 '"type":"response",' +
                 '"success":false,' +
-                '"message":"Internal error: ' + e.toString() + '"}';
+                '"message":"Internal error: ' + e.stack + '"}';
       }
     } catch (e) {
       // Failed in one of the catch blocks above - most generic error.
-      return '{"seq":0,"type":"response","success":false,"message":"Internal error"}';
+      return '{"seq":0,"type":"response","success":false,"message":"' + e.stack + '"}';
     }
   },
   processDebugRequest: function WRAPPED_BY_NODE_INSPECTOR(request) {
@@ -117,9 +117,7 @@ function V8Debug() {
     this._unwrapDebugCommandProcessor();
     this._unshareSecurityToken();
     this._unsetDebugEventListener();
-    process.nextTick(function() {
-      this.removeAllListeners();
-    }.bind(this));
+    this.disableWebkitProtocol();
   });
 }
 
@@ -150,7 +148,7 @@ V8Debug.prototype._wrapDebugCommandProcessor = function() {
   extend(proto, overrides);
   overrides.extendedProcessDebugJSONRequestHandles_['disconnect'] = function(request, response) {
     this.emit('close');
-    this.processDebugJSONRequest(request);
+    proto.processDebugJSONRequest(request);
   }.bind(this);
 };
 
@@ -286,9 +284,9 @@ V8Debug.prototype.enableWebkitProtocol = function() {
       response.event = command;
 
       new WebkitEventCallback(callback)(request, response);
+      this.unregisterCommand(handlerName);
     }.bind(this));
     this.sendCommand(handlerName);
-    this.unregisterCommand(handlerName);
   };
 
   this.wrapCallFrames = function(execState, maximumLimit, scopeDetails) {
@@ -333,6 +331,13 @@ V8Debug.prototype.enableWebkitProtocol = function() {
       InjectedScriptHost.execState = null;
     }
   }
+};
+
+V8Debug.prototype.disableWebkitProtocol = function() {
+  if (!this._webkitProtocolEnabled) return;
+  this._webkitProtocolEnabled = false;
+
+  this.runInDebugContext('ToggleMirrorCache()');
 };
 
 V8Debug.prototype.releaseObject =
