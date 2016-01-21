@@ -103,6 +103,8 @@ var overrides = {
 
 inherits(V8Debug, EventEmitter);
 function V8Debug() {
+  if (!(this instanceof V8Debug)) return new V8Debug();
+
   this._webkitProtocolEnabled = false;
 
   // NOTE: Call `_setDebugEventListener` before all other changes in Debug Context.
@@ -351,4 +353,4 @@ V8Debug.prototype.registerAgentCommand = function(command, parameters, callback)
   throw new Error('Use "enableWebkitProtocol" before using this method');
 };
 
-module.exports = new V8Debug();
+module.exports = V8Debug;

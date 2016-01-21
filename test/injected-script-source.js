@@ -1,5 +1,5 @@
 var expect = require('chai').expect;
-var debug = require('../');
+var debug = require('../')();
 var NODE_NEXT = require('../tools/NODE_NEXT.js');
 
 if (!NODE_NEXT) return;

@@ -1,5 +1,5 @@
 var expect = require('chai').expect,
-    v8debug = require('../');
+    v8debug = require('../')();
 
 var NODE_NEXT = require('../tools/NODE_NEXT');
 

@@ -11,6 +11,12 @@ This is a part of [node-inspector](http://github.com/node-inspector/node-inspect
 ```
 npm install v8-debug
 ```
+
+## Usage
+```js
+var debug = require('v8-debug')();
+```
+
 ## API
 
 ### registerCommand(name, callback)
@@ -109,7 +115,7 @@ Experimental method for registering WebKit protocol handlers
 
 Simple console.log checking
 ```js
-var debug = require('v8-debug');
+var debug = require('v8-debug')();
 
 debug.registerEvent('console.log');
 
