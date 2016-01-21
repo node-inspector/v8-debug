@@ -169,18 +169,24 @@ V8Debug.prototype._unwrapDebugCommandProcessor = function() {
 V8Debug.prototype.register =
 V8Debug.prototype.registerCommand = function(name, func) {
   var proto = this._DebugCommandProcessor;
+  if (!proto) return;
+
   proto.extendedProcessDebugJSONRequestHandles_[name] = func;
 };
 
 V8Debug.prototype.unregister =
 V8Debug.prototype.unregisterCommand = function(name, func) {
   var proto = this._DebugCommandProcessor;
+  if (!proto) return;
+
   delete proto.extendedProcessDebugJSONRequestHandles_[name];
 };
 
 V8Debug.prototype.registerAsync =
 V8Debug.prototype.registerAsyncCommand = function(name, func) {
   var proto = this._DebugCommandProcessor;
+  if (!proto) return;
+
   proto.extendedProcessDebugJSONRequestAsyncHandles_[name] = func;
 };
 
