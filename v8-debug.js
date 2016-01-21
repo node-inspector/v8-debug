@@ -10,9 +10,6 @@ var extend = require('util')._extend;
 var NODE_NEXT = require('./tools/NODE_NEXT');
 var nextTmpEventId = 1;
 
-// Don't cache debugger module
-delete require.cache[module.id];
-
 function InjectedScriptDir(link) {
   return require.resolve(__dirname + '/InjectedScript/' + link);
 };
@@ -117,10 +114,10 @@ function V8Debug() {
   this._wrapDebugCommandProcessor();
 
   this.once('close', function() {
+    this._disableWebkitProtocol();
     this._unwrapDebugCommandProcessor();
     this._unshareSecurityToken();
     this._unsetDebugEventListener();
-    this.disableWebkitProtocol();
   });
 }
 
@@ -147,22 +144,26 @@ V8Debug.prototype._unshareSecurityToken = function() {
 V8Debug.prototype._wrapDebugCommandProcessor = function() {
   var proto = this.get('DebugCommandProcessor.prototype');
   this._DebugCommandProcessor = proto;
-  overrides.processDebugRequest_ = proto.processDebugRequest;
-  extend(proto, overrides);
-  overrides.extendedProcessDebugJSONRequestHandles_['disconnect'] = function(request, response) {
+
+  if (!proto.processDebugRequest_) {
+    proto.processDebugRequest_ = proto.processDebugRequest;
+    extend(proto, overrides);
+  }
+
+  proto.extendedProcessDebugJSONRequestHandles_['disconnect'] = function(request, response) {
     this.emit('close');
-    proto.processDebugJSONRequest(request);
+    var proto = this._DebugCommandProcessor;
+    proto.processDebugJSONRequest(request, response);
+    return true;
   }.bind(this);
 };
 
 V8Debug.prototype._unwrapDebugCommandProcessor = function() {
-  var proto = this._DebugCommandProcessor;
-  proto.processDebugRequest = proto.processDebugRequest_;
-  delete proto.processDebugRequest_;
-  delete proto.extendedProcessDebugJSONRequest_;
-  delete proto.extendedProcessDebugJSONRequestHandles_;
-  delete proto.extendedProcessDebugJSONRequestAsyncHandles_;
+  var proto = this.get('DebugCommandProcessor.prototype');
   delete this._DebugCommandProcessor;
+
+  proto.extendedProcessDebugJSONRequestHandles_ = {};
+  proto.extendedProcessDebugJSONRequestAsyncHandles_ = {};
 };
 
 V8Debug.prototype.register =
@@ -339,11 +340,10 @@ V8Debug.prototype.enableWebkitProtocol = function() {
   }
 };
 
-V8Debug.prototype.disableWebkitProtocol = function() {
+V8Debug.prototype._disableWebkitProtocol = function() {
   if (!this._webkitProtocolEnabled) return;
   this._webkitProtocolEnabled = false;
-
-  this.runInDebugContext('ToggleMirrorCache()');
+  this.runInDebugContext('ToggleMirrorCache(true)');
 };
 
 V8Debug.prototype.releaseObject =
