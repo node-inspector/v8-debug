@@ -1,11 +1,18 @@
-var binary = require('node-pre-gyp');
+//var binary = require('node-pre-gyp');
 var fs = require('fs');
 var path = require('path');
-var binding_path = binary.find(path.resolve(path.join(__dirname,'./package.json')));
-var binding = require(binding_path);
+var pack = require('./package.json');
 var EventEmitter = require('events').EventEmitter;
 var inherits = require('util').inherits;
 var extend = require('util')._extend;
+
+var binding = require('./' + [
+  'build',
+  'debug',
+  'v' + pack.version,
+  ['node', 'v' + process.versions.modules, process.platform, process.arch].join('-'),
+  'debug.node'
+].join('/'));
 
 var NODE_NEXT = require('./tools/NODE_NEXT');
 var nextTmpEventId = 1;
@@ -152,7 +159,7 @@ V8Debug.prototype._wrapDebugCommandProcessor = function() {
 
   proto.extendedProcessDebugJSONRequestHandles_['disconnect'] = function(request, response) {
     this.emit('close');
-    var proto = this._DebugCommandProcessor;
+    proto._DebugCommandProcessor;
     proto.processDebugJSONRequest(request, response);
     return true;
   }.bind(this);
