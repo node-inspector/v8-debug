@@ -109,6 +109,8 @@ inherits(V8Debug, EventEmitter);
 function V8Debug() {
   if (!(this instanceof V8Debug)) return new V8Debug();
 
+  this._Debug = this.get('Debug');
+
   this._webkitProtocolEnabled = false;
 
   // NOTE: Call `_setDebugEventListener` before all other changes in Debug Context.
@@ -129,15 +131,13 @@ function V8Debug() {
 }
 
 V8Debug.prototype._setDebugEventListener = function() {
-  var Debug = this.get('Debug');
-  Debug.setListener(function(_, execState, event) {
+  this._Debug.setListener(function(_, execState, event) {
     // TODO(3y3): Handle events here
   });
 };
 
 V8Debug.prototype._unsetDebugEventListener = function() {
-  var Debug = this.get('Debug');
-  Debug.setListener(null);
+  this._Debug.setListener(null);
 };
 
 V8Debug.prototype._shareSecurityToken = function() {
@@ -160,8 +160,8 @@ V8Debug.prototype._wrapDebugCommandProcessor = function() {
   proto.extendedProcessDebugJSONRequestHandles_['disconnect'] = function(request, response) {
     this.emit('close');
     proto._DebugCommandProcessor;
-    proto.processDebugJSONRequest(request, response);
-    return true;
+    //proto.processDebugJSONRequest(request, response);
+    //return true;
   }.bind(this);
 };
 
@@ -171,6 +171,14 @@ V8Debug.prototype._unwrapDebugCommandProcessor = function() {
 
   proto.extendedProcessDebugJSONRequestHandles_ = {};
   proto.extendedProcessDebugJSONRequestAsyncHandles_ = {};
+};
+
+V8Debug.prototype.setPauseOnNextStatement = function(pause) {
+  binding.setPauseOnNextStatement(pause === true);
+};
+
+V8Debug.prototype.scripts = function() {
+  return this._Debug.scripts();
 };
 
 V8Debug.prototype.register =

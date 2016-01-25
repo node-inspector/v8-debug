@@ -10,6 +10,7 @@
 using v8::Isolate;
 using v8::Local;
 using v8::Value;
+using v8::Boolean;
 using v8::String;
 using v8::Object;
 using v8::Context;
@@ -114,6 +115,16 @@ namespace nodex {
 #endif
         debug_context->UseDefaultSecurityToken();
       }
+
+      static NAN_METHOD(SetPauseOnNextStatement) {
+        Local<Boolean> _pause = CHK(To<Boolean>(info[0]));
+        bool pause = _pause->Value();
+        if (pause)
+            v8::Debug::DebugBreak(info.GetIsolate());
+        else
+            v8::Debug::CancelDebugBreak(info.GetIsolate());
+      }
+
     private:
       Debug() {}
       ~Debug() {}
@@ -131,6 +142,7 @@ namespace nodex {
     SetMethod(target, "allowNatives", Debug::AllowNatives);
     SetMethod(target, "shareSecurityToken", Debug::ShareSecurityToken);
     SetMethod(target, "unshareSecurityToken", Debug::UnshareSecurityToken);
+    SetMethod(target, "setPauseOnNextStatement", Debug::SetPauseOnNextStatement);
   }
 
   NODE_MODULE(debug, Initialize)
