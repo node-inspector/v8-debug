@@ -1,10 +1,7 @@
 var expect = require('chai').expect;
 var binary = require('node-pre-gyp');
 var path = require('path');
-var binding_path = binary.find(path.resolve(path.join(__dirname,'../package.json')));
-var NODE_NEXT = require('../tools/NODE_NEXT.js');
-
-if (!NODE_NEXT) return;
+var binding_path = binary.find(path.resolve(path.join(__dirname,'../../package.json')));
 
 describe('binding', function() {
   var binding = require(binding_path);

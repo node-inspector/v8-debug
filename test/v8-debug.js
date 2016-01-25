@@ -1,5 +1,4 @@
-var expect = require('chai').expect,
-    v8debug = require('../')();
+var expect = require('chai').expect;
 
 var NODE_NEXT = require('../tools/NODE_NEXT');
 
@@ -10,12 +9,16 @@ _debugger.stderr.on('data', function(data) {
 });
 
 describe('v8-debug', function() {
+  var v8debug = null;
+
   before(function(done) {
-    _debugger.stdout.on('data', function(data) {
-      console.log('    ' + data);
+    v8debug = require('../')()
+    _debugger.stdout.once('data', function(data) {
       done();
     });
   });
+
+  after(function() { v8debug = null; });
 
   describe('function `runInDebugContext`', function() {
     it('returns Debug object', function() {
@@ -55,8 +58,13 @@ describe('v8-debug', function() {
 
   describe('events.', function() {
     it('Emits `close` on disconnect command', function(done) {
-      v8debug.on('close', done);
+      v8debug.once('close', done);
       v8debug.sendCommand('disconnect');
     });
   });
 });
+
+if (NODE_NEXT) {
+  require('./next/injected-script.js');
+  require('./next/injected-script-source.js');
+}
