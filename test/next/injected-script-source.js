@@ -1,13 +1,14 @@
 var expect = require('chai').expect;
-var debug = require('../')();
-var NODE_NEXT = require('../tools/NODE_NEXT.js');
-
-if (!NODE_NEXT) return;
 
 describe('InjectedScriptSource', function() {
+  var debug = null;
+
   before(function() {
-      debug.enableWebkitProtocol();
+    debug = require('../../')();
+    debug.enableWebkitProtocol();
   });
+
+  after(function() { debug = null; });
 
   it('isPrimitiveValue', function(done) {
     debug.registerAgentCommand('isPrimitiveValue', function(args, response, IScript, DScript) {
