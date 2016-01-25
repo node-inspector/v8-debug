@@ -59,7 +59,7 @@ namespace nodex {
         if (expression.IsEmpty())
           RETURN(Undefined());
 
-        Local<Context> current_context = Isolate::GetCurrent()->GetCurrentContext();
+        Local<Context> current_context = Nan::GetCurrentContext();
         Local<Context> debug_context = v8::Debug::GetDebugContext();
 #if (NODE_MODULE_VERSION > 45)
         if (debug_context.IsEmpty()) {
@@ -89,7 +89,7 @@ namespace nodex {
       }
 
       static NAN_METHOD(ShareSecurityToken) {
-        Local<Context> current_context = info.GetIsolate()->GetCurrentContext();
+        Local<Context> current_context = Nan::GetCurrentContext();
         Local<Context> debug_context = v8::Debug::GetDebugContext();
 #if (NODE_MODULE_VERSION > 45)
         if (debug_context.IsEmpty()) {
@@ -103,7 +103,7 @@ namespace nodex {
       }
 
       static NAN_METHOD(UnshareSecurityToken) {
-        Local<Context> current_context = info.GetIsolate()->GetCurrentContext();
+        Local<Context> current_context = Nan::GetCurrentContext();
         Local<Context> debug_context = v8::Debug::GetDebugContext();
 #if (NODE_MODULE_VERSION > 45)
         if (debug_context.IsEmpty()) {
