@@ -15,7 +15,6 @@ using v8::Function;
 using Nan::To;
 using Nan::New;
 using Nan::Get;
-using Nan::Set;
 using Nan::SetMethod;
 using Nan::EscapableHandleScope;
 using Nan::Undefined;
@@ -53,8 +52,8 @@ namespace nodex {
   };
 
   NAN_METHOD(JavaScriptCallFrame::EvaluateWithExceptionDetails) {
-    Local<Object> callFrame = CHK(To<Object>(CHK(Get(info.Holder(), CHK(New("proto"))))));
-    Local<Function> evalFunction = Local<Function>::Cast(CHK(Get(callFrame, CHK(New("evaluate")))));
+    Local<Object> callFrame = CHK(To<Object>(CHK(Get(info.Holder(), STR("proto")))));
+    Local<Function> evalFunction = Local<Function>::Cast(CHK(Get(callFrame, STR("evaluate"))));
 
     Local<Value> expression = info[0];
     Local<Value> scopeExtension = info[1];
@@ -82,8 +81,8 @@ namespace nodex {
   };
 
   NAN_METHOD(JavaScriptCallFrame::Restart) {
-    Local<Object> callFrame = CHK(To<Object>(CHK(Get(info.Holder(), CHK(New("proto"))))));
-    Local<Function> restartFunction = Local<Function>::Cast(CHK(Get(callFrame, CHK(New("restart")))));
+    Local<Object> callFrame = CHK(To<Object>(CHK(Get(info.Holder(), STR("proto")))));
+    Local<Function> restartFunction = Local<Function>::Cast(CHK(Get(callFrame, STR("restart"))));
 
     TryCatch tryCatch;
     MaybeLocal<Value> result;

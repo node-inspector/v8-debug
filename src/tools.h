@@ -4,6 +4,9 @@
 #define CHK(VALUE)                                                            \
   VALUE.ToLocalChecked()
 
+#define STR(VALUE)                                                            \
+  Nan::New<v8::String>(VALUE).ToLocalChecked()
+
 #define RETURN(VALUE) {                                                       \
   info.GetReturnValue().Set(VALUE);                                           \
   return;                                                                     \
