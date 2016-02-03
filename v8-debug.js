@@ -323,6 +323,8 @@ V8Debug.prototype.enableWebkitProtocol = function() {
     if (maximumLimit < 0) throw new Error('Incorrect stack trace limit.');
     var data = (maximumLimit << scopeBits) | scopeDetails;
     var currentCallFrame = DebuggerScript.currentCallFrame(execState, data);
+    if (!currentCallFrame) return;
+
     return new JavaScriptCallFrame(currentCallFrame);
   };
 
