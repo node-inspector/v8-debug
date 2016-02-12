@@ -177,6 +177,10 @@ V8Debug.prototype.setPauseOnNextStatement = function(pause) {
   binding.setPauseOnNextStatement(pause === true);
 };
 
+V8Debug.prototype.setLiveEditEnabled = function(enabled) {
+  binding.setLiveEditEnabled(enabled === true);
+};
+
 V8Debug.prototype.scripts = function() {
   return this._Debug.scripts();
 };

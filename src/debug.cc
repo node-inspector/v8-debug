@@ -125,6 +125,14 @@ namespace nodex {
             v8::Debug::CancelDebugBreak(info.GetIsolate());
       }
 
+      static NAN_METHOD(SetLiveEditEnabled) {
+#if (NODE_MODULE_VERSION > 45)
+        Local<Boolean> _enabled = CHK(To<Boolean>(info[0]));
+        bool enabled = _enabled->Value();
+        v8::Debug::SetLiveEditEnabled(info.GetIsolate(), enabled);
+#endif
+      }
+
     private:
       Debug() {}
       ~Debug() {}
@@ -143,6 +151,7 @@ namespace nodex {
     SetMethod(target, "shareSecurityToken", Debug::ShareSecurityToken);
     SetMethod(target, "unshareSecurityToken", Debug::UnshareSecurityToken);
     SetMethod(target, "setPauseOnNextStatement", Debug::SetPauseOnNextStatement);
+    SetMethod(target, "setLiveEditEnabled", Debug::SetLiveEditEnabled);
   }
 
   NODE_MODULE(debug, Initialize)
