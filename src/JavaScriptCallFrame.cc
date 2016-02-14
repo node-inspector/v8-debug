@@ -87,9 +87,7 @@ namespace nodex {
     TryCatch tryCatch;
     MaybeLocal<Value> result;
 
-    v8::Debug::SetLiveEditEnabled(info.GetIsolate(), true);
     result = restartFunction->Call(callFrame, 0, NULL);
-    v8::Debug::SetLiveEditEnabled(info.GetIsolate(), false);
 
     MAYBE_RETHROW();
     RETURN(CHK(result));
