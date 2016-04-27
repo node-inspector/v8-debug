@@ -1,10 +1,7 @@
 var expect = require('chai').expect;
 var binary = require('node-pre-gyp');
 var path = require('path');
-var binding_path = binary.find(path.resolve(path.join(__dirname,'../package.json')));
-var NODE_NEXT = require('../tools/NODE_NEXT.js');
-
-if (!NODE_NEXT) return;
+var binding_path = binary.find(path.resolve(path.join(__dirname,'../../package.json')));
 
 describe('binding', function() {
   var binding = require(binding_path);
@@ -21,6 +18,7 @@ describe('binding', function() {
       checksTypeValid(new RegExp(), 'regexp');
       checksTypeValid(new Error(), 'error');
       checksTypeValid(new String(), undefined);
+      checksTypeValid(new Promise(function() {}), undefined);
 
       function checksTypeValid(value, type) {
         it('checks ' + type + ' subtype', function() {
@@ -65,16 +63,15 @@ describe('binding', function() {
     describe('function `internalConstructorName`', function() {
       checksNameValid(new Number(), 'Number');
       checksNameValid(new Object(), 'Object');
+      checksNameValid(new Promise(function() {}), 'Promise');
+      checksNameValid(1, undefined);
+      checksNameValid(null, undefined);
 
       function checksNameValid(value, name) {
         it('checks new ' + name + '() constructor name', function() {
           expect(host.internalConstructorName(value)).to.equal(name);
         });
       }
-
-      throwsOnArgs([]);
-      throwsOnArgs([1]);
-      throwsOnArgs([null]);
 
       function throwsOnArgs(argvList) {
         it('should throw on wrong arguments ' + JSON.stringify(argvList), function() {
