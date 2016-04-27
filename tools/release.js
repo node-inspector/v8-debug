@@ -1,5 +1,5 @@
 var args = process.argv.slice(2);
-var version = args.splice(-1);
+var version = args.splice(0, 1);
 
 var npm = require('./update-npm-version');
 var changelog = require('./update-changelog');
