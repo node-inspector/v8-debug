@@ -28,7 +28,7 @@
   },
   "main": "v8-debug",
   "dependencies": {
-    "nan": "^2.0.4",
+    "nan": "^2.3.2",
     "node-pre-gyp": "^0.6.5"
   },
   "devDependencies": {
