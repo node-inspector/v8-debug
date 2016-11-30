@@ -24,7 +24,7 @@
     "debugger"
   ],
   "engines": {
-    "node": ">=0.10"
+    "node": ">=0.10 <7"
   },
   "main": "v8-debug",
   "dependencies": {
