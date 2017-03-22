@@ -48,7 +48,11 @@ namespace nodex {
       static NAN_METHOD(SendCommand) {
         String::Value command(info[0]);
 #if (NODE_MODULE_VERSION > 11)
+        #if (NODE_MODULE_VERSION > 48)
         Isolate* debug_isolate = v8::Debug::GetDebugContext(Isolate::GetCurrent())->GetIsolate();
+        #else
+        Isolate* debug_isolate = v8::Debug::GetDebugContext()->GetIsolate();
+        #endif
         v8::HandleScope debug_scope(debug_isolate);
         v8::Debug::SendCommand(debug_isolate, *command, command.length());
 #else
@@ -63,12 +67,20 @@ namespace nodex {
         if (expression.IsEmpty())
           RETURN(Undefined());
 
+        #if (NODE_MODULE_VERSION > 48)
         Local<Context> debug_context = v8::Debug::GetDebugContext(Isolate::GetCurrent());
+        #else
+        Local<Context> debug_context = v8::Debug::GetDebugContext();
+        #endif
 #if (NODE_MODULE_VERSION > 45)
         if (debug_context.IsEmpty()) {
           // Force-load the debug context.
           v8::Debug::GetMirror(info.GetIsolate()->GetCurrentContext(), info[0]);
+          #if (NODE_MODULE_VERSION > 48)
           debug_context = v8::Debug::GetDebugContext(Isolate::GetCurrent());
+          #else
+          debug_context = v8::Debug::GetDebugContext();
+          #endif
         }
 #endif
 
