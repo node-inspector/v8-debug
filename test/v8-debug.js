@@ -44,7 +44,9 @@ describe('v8-debug', function() {
         expect(v8debug.registerAgentCommand.bind(v8debug, 'command', [], function() {
           done();
         })).to.not.throw();
-        v8debug.sendCommand('command');
+        process.nextTick(function() {
+          v8debug.sendCommand('command');
+        });
       });
     } else {
       it('enableWebkitProtocol should throw error', function() {
@@ -56,7 +58,9 @@ describe('v8-debug', function() {
   describe('events.', function() {
     it('Emits `close` on disconnect command', function(done) {
       v8debug.on('close', done);
-      v8debug.sendCommand('disconnect');
+      process.nextTick(function() {
+        v8debug.sendCommand('disconnect');
+      });
     });
   });
 });

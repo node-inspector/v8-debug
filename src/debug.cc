@@ -36,7 +36,7 @@ namespace nodex {
 
         Local<Function> fn = Local<Function>::Cast(info[0]);
 
-        #if (NODE_MODULE_VERSION > 48)
+        #if (NODE_MODULE_VERSION > 47)
         Local<Context> context = fn->GetIsolate()->GetCurrentContext();
         v8::Debug::Call(context, fn);
         #else
@@ -48,7 +48,7 @@ namespace nodex {
       static NAN_METHOD(SendCommand) {
         String::Value command(info[0]);
 #if (NODE_MODULE_VERSION > 11)
-        #if (NODE_MODULE_VERSION > 48)
+        #if (NODE_MODULE_VERSION > 47)
         Isolate* debug_isolate = v8::Debug::GetDebugContext(Isolate::GetCurrent())->GetIsolate();
         #else
         Isolate* debug_isolate = v8::Debug::GetDebugContext()->GetIsolate();
@@ -67,7 +67,7 @@ namespace nodex {
         if (expression.IsEmpty())
           RETURN(Undefined());
 
-        #if (NODE_MODULE_VERSION > 48)
+        #if (NODE_MODULE_VERSION > 47)
         Local<Context> debug_context = v8::Debug::GetDebugContext(Isolate::GetCurrent());
         #else
         Local<Context> debug_context = v8::Debug::GetDebugContext();
@@ -76,7 +76,7 @@ namespace nodex {
         if (debug_context.IsEmpty()) {
           // Force-load the debug context.
           v8::Debug::GetMirror(info.GetIsolate()->GetCurrentContext(), info[0]);
-          #if (NODE_MODULE_VERSION > 48)
+          #if (NODE_MODULE_VERSION > 47)
           debug_context = v8::Debug::GetDebugContext(Isolate::GetCurrent());
           #else
           debug_context = v8::Debug::GetDebugContext();
