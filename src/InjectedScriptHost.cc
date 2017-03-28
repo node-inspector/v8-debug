@@ -170,7 +170,7 @@ namespace nodex {
       Local<String> constructorSymbol = CHK(New("constructor"));
       if (object->HasRealNamedProperty(constructorSymbol) && !object->HasRealNamedCallbackProperty(constructorSymbol)) {
         TryCatch tryCatch;
-        Local<Value> constructor = object->GetRealNamedProperty(constructorSymbol);
+        Local<Value> constructor = Nan::GetRealNamedProperty(object, constructorSymbol).ToLocalChecked();
         if (!constructor.IsEmpty() && constructor->IsFunction()) {
           Local<String> constructorName = functionDisplayName(Handle<Function>::Cast(constructor));
           if (!constructorName.IsEmpty() && !tryCatch.HasCaught())

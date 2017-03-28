@@ -169,10 +169,7 @@ function sendCommand(name, attributes, userdata) {
     command: name,
     arguments: attributes || {}
   };
-  // don't know why yet
-  process.nextTick(function() {
-    binding.sendCommand(JSON.stringify(message))
-  });
+  binding.sendCommand(JSON.stringify(message));
 };
 
 V8Debug.prototype.commandToEvent = function(request, response) {
